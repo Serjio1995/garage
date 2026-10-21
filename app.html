@@ -1,0 +1,3017 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>GARAGE</title>
+  <meta name="description" content="Онлайн-запись в автосервис без звонков" />
+  <meta name="theme-color" content="#0A0A0B" />
+  <!-- Installed from the home screen: open full-screen, without the browser bar -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GARAGE" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link id="app-manifest" rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="core.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg:      #0A0A0A;
+      --bg2:     #111111;
+      --bg3:     #1A1A1A;
+      --bg4:     #242424;
+      --accent:  #CCFF00;
+      --cyan:    #00E5FF;
+      --white:   #FFFFFF;
+      --gray:    #8E8E93;
+      --border:  rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.16);
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; overflow: hidden; overscroll-behavior: none; }
+
+    #root { display: flex; flex-direction: column; height: 100dvh; height: 100vh; overflow: hidden; background: var(--bg); }
+
+    ::-webkit-scrollbar { width: 2px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray); }
+
+    .tab-content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+    .screen { padding: 0 0 32px; animation: slideUp .38s cubic-bezier(.16,1,.3,1) both; }
+    .px { padding-left: 16px; padding-right: 16px; }
+
+    /* ── Bottom Nav ── */
+    .nav { height: 68px; background: var(--bg2); border-top: 1px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom, 0); flex-shrink: 0; position: relative; z-index: 10; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; background: none; border: none; color: var(--gray); transition: color .18s, transform .12s; padding: 0; position: relative; user-select: none; }
+    .nav-btn:active { transform: scale(.9); }
+    .nav-btn.on { color: var(--accent); }
+    .nav-btn.on::after { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 28px; height: 2px; background: var(--accent); }
+    .nav-icon { font-size: 19px; line-height: 1; }
+    .nav-label { font-size: 8.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+
+    .top-line { height: 1px; flex-shrink: 0; background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%); opacity: .35; }
+
+    /* ── Buttons ── */
+    .btn { display: flex; align-items: center; justify-content: center; width: 100%; border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 12.5px; letter-spacing: .12em; text-transform: uppercase; transition: transform .12s cubic-bezier(.16,1,.3,1), background .12s, opacity .15s; outline: none; border-radius: 0; }
+    .btn:active { transform: scale(.97); }
+    .btn-primary  { background: var(--accent); color: #000; padding: 17px 20px; }
+    .btn-primary:active { background: #b8e600; }
+    .btn-ghost { background: transparent; color: var(--white); padding: 14px 20px; border: 1px solid var(--border2); }
+    .btn-ghost:active { border-color: var(--accent); color: var(--accent); }
+    .btn-sm { padding: 10px 16px; font-size: 11px; }
+    .btn[disabled] { opacity: .3; pointer-events: none; }
+
+    .card { background: var(--bg2); border: 1px solid var(--border); }
+
+    .spec-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    .spec-row:last-child { border-bottom: none; }
+
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: dotPulse 2s infinite; }
+
+    .pbar { height: 3px; background: var(--bg4); overflow: hidden; }
+    .pfill { height: 100%; background: var(--accent); transition: width 1.2s cubic-bezier(.16,1,.3,1); }
+
+    .check-item { display: flex; align-items: center; gap: 14px; padding: 14px 14px; border: 1px solid var(--border); cursor: pointer; margin-bottom: 2px; transition: border-color .15s, background .15s, transform .1s; }
+    .check-item:active { transform: scale(.985); }
+    .check-item.on { border-color: var(--accent); background: rgba(255,255,255,.04); }
+    .checkbox { width: 20px; height: 20px; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+    .checkbox.on { border-color: var(--accent); background: var(--accent); color: #000; }
+
+    .cat-btn { padding: 18px 13px; border: 1px solid var(--border); background: var(--bg2); cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; transition: border-color .15s, background .15s, transform .12s; font-family: 'Inter', sans-serif; }
+    .cat-btn:active, .cat-btn.on { transform: scale(.965); border-color: var(--accent); background: rgba(255,255,255,.05); }
+
+    .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 2px; transition: background .12s, transform .1s; }
+    .cal-day:active { transform: scale(.82); }
+    .cal-day.avail:hover { background: var(--bg3); }
+    .cal-day.sel { background: var(--accent); color: #000; font-weight: 700; }
+    .cal-day.na { color: var(--bg4); pointer-events: none; text-decoration: line-through; }
+    .cal-day.today { color: var(--accent); font-weight: 700; }
+    .cal-day.past { color: var(--bg4); pointer-events: none; }
+
+    .tslot { padding: 9px 6px; border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 11px; cursor: pointer; text-align: center; transition: all .14s; }
+    .tslot:active { transform: scale(.88); }
+    .tslot.sel { border-color: var(--accent); background: rgba(255,255,255,.08); color: var(--accent); }
+    .tslot.na { opacity: .22; pointer-events: none; }
+
+    .tline-item { position: relative; padding-left: 22px; padding-bottom: 26px; }
+    .tline-item::before { content: ''; position: absolute; left: 4px; top: 10px; bottom: 0; width: 1px; background: var(--border); }
+    .tline-item:last-child::before { display: none; }
+    .tline-dot { position: absolute; left: 0; top: 7px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--border2); background: var(--bg4); }
+    .tline-dot.on { border-color: var(--accent); background: var(--accent); }
+
+    .lcard { background: linear-gradient(135deg, #191919 0%, #0c0c0c 55%, #161616 100%); border: 1px solid rgba(255,255,255,.11); padding: 22px 20px; position: relative; overflow: hidden; }
+    .lcard::before { content: ''; position: absolute; top: -50%; right: -15%; width: 55%; height: 200%; background: linear-gradient(180deg, transparent, rgba(255,255,255,.04) 50%, transparent); transform: rotate(18deg); pointer-events: none; }
+    .tier-badge { display: inline-block; padding: 3px 8px; background: var(--accent); color: #000; font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+
+    .ref-box { display: flex; align-items: center; gap: 10px; background: var(--bg3); border: 1px solid var(--border); padding: 13px 14px; }
+
+    .expandable { overflow: hidden; transition: max-height .38s cubic-bezier(.16,1,.3,1); max-height: 0; }
+    .expandable.open { max-height: 480px; }
+
+    .sdot { height: 6px; border-radius: 3px; background: var(--bg4); transition: width .3s cubic-bezier(.16,1,.3,1), background .25s; }
+    .sdot.on { background: var(--accent); width: 24px !important; }
+    .sdot.done { background: rgba(255,255,255,.5); }
+
+    .toast { position: fixed; bottom: 82px; left: 50%; z-index: 99; transform: translateX(-50%) translateY(14px); background: var(--accent); color: #000; padding: 10px 22px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border-radius: 2px; pointer-events: none; opacity: 0; transition: opacity .25s, transform .3s cubic-bezier(.16,1,.3,1); white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .skel { background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%); background-size: 200% 100%; animation: shimmer 1.6s infinite; }
+
+    .gridbg { background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px); background-size: 36px 36px; }
+
+    /* ── Car stage ── */
+    .car-stage { width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; border-bottom: 1px solid var(--border); }
+    .car-stage svg { width: 230px; filter: drop-shadow(0 6px 22px rgba(255,255,255,.18)); }
+    .car-stage img { width: 100%; height: 100%; object-fit: cover; opacity: .88; filter: brightness(.85) contrast(1.1); }
+    .scan-line { position: absolute; left: 0; right: 0; top: -2px; height: 1.5px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation: scan 3.5s linear infinite; pointer-events: none; z-index: 2; }
+    .car-stage-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,.6) 100%); z-index: 1; pointer-events: none; }
+    .edit-car-btn { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(0,0,0,.65); border: 1px solid var(--border2); color: var(--white); padding: 6px 10px; font-size: 10px; font-weight: 700; letter-spacing: .1em; cursor: pointer; font-family: 'Inter', sans-serif; backdrop-filter: blur(6px); transition: border-color .15s, color .15s; }
+    .edit-car-btn:active { border-color: var(--accent); color: var(--accent); transform: scale(.95); }
+
+    /* ── Top bar: brand · mode · language ── */
+    .topbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 0 12px; background: var(--bg); }
+    .brand { font: 700 12px/1 'JetBrains Mono', monospace; letter-spacing: .14em; margin-right: auto; white-space: nowrap; }
+    .brand b { color: var(--accent); }
+    .seg { display: flex; background: var(--bg2); border: 1px solid var(--border2); }
+    .seg button { position: relative; padding: 6px 9px; font: 700 9.5px/1 'Inter', sans-serif; letter-spacing: .1em; background: none; border: none; color: var(--gray); cursor: pointer; transition: all .15s; }
+    .seg button:active { transform: scale(.92); }
+    .seg button.on { background: var(--accent); color: #000; }
+    .badge { position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; border-radius: 8px; background: #FF3B30; color: #fff; font: 700 9px/16px 'Inter', sans-serif; padding: 0 4px; text-align: center; letter-spacing: 0; }
+    .nav-badge { position: absolute; top: 8px; left: calc(50% + 6px); min-width: 15px; height: 15px; border-radius: 8px; background: #FF3B30; color: #fff; font: 700 8.5px/15px 'Inter', sans-serif; padding: 0 4px; }
+
+    /* ── Date strip ── */
+    .dstrip { display: flex; gap: 4px; overflow-x: auto; margin: 0 -16px 14px; padding: 0 16px 2px; scrollbar-width: none; }
+    .dstrip::-webkit-scrollbar { display: none; }
+    .dchip { flex: 0 0 52px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0; border: 1px solid var(--border); background: var(--bg2); color: var(--white); cursor: pointer; font-family: 'Inter', sans-serif; transition: all .15s; }
+    .dchip:active { transform: scale(.92); }
+    .dchip.sel { border-color: var(--accent); background: var(--accent); color: #000; }
+    .dchip.off { opacity: .35; }
+    .dchip.off.sel { opacity: 1; background: var(--bg4); color: var(--white); border-color: var(--border2); }
+    .dchip-wd { font-size: 8.5px; font-weight: 700; letter-spacing: .1em; opacity: .7; }
+    .dchip-d { font-size: 17px; font-weight: 700; line-height: 1; }
+    .dchip-m { font-size: 8px; font-weight: 700; letter-spacing: .08em; opacity: .6; }
+
+    /* ── Chips / status ── */
+    .chip { display: inline-block; padding: 3px 7px; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; border: 1px solid var(--border2); color: var(--gray); white-space: nowrap; }
+    .chip.new { border-color: rgba(255,150,0,.5); color: #FF9F0A; background: rgba(255,150,0,.08); }
+    .chip.ok  { border-color: var(--accent); color: var(--accent); background: rgba(255,255,255,.06); }
+    .chip.off { text-decoration: line-through; }
+    .chip.ai  { border-color: rgba(0,229,255,.4); color: var(--cyan); }
+    .link-btn { background: none; border: none; color: var(--gray); cursor: pointer; font: 11px 'Inter', sans-serif; padding: 0; }
+
+    /* ── AI assistant ── */
+    .ai-card { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; margin-bottom: 18px; border: 1px solid rgba(0,229,255,.35); background: linear-gradient(135deg, rgba(0,229,255,.08), rgba(255,255,255,.03)); cursor: pointer; color: var(--white); font-family: inherit; text-align: left; transition: transform .12s; }
+    .ai-card:active { transform: scale(.98); }
+    .chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; }
+    .msg { max-width: 88%; padding: 10px 12px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; animation: fadeIn .25s ease both; }
+    .msg.ai { align-self: flex-start; background: var(--bg3); border: 1px solid var(--border); }
+    .msg.me { align-self: flex-end; background: var(--accent); color: #000; font-weight: 500; }
+    .offer { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; white-space: normal; }
+    .typing span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gray); margin-right: 4px; animation: dotPulse 1s infinite; }
+    .ai-chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 16px 10px; scrollbar-width: none; }
+    .ai-chips::-webkit-scrollbar { display: none; }
+    .ai-chips button { flex-shrink: 0; padding: 8px 11px; border: 1px solid var(--border2); background: none; color: var(--white); font: 500 11.5px 'Inter', sans-serif; cursor: pointer; white-space: nowrap; }
+    .chat-input { display: flex; gap: 6px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); }
+
+    /* ── Owner: timeline ── */
+    .tl { display: flex; border: 1px solid var(--border); background: var(--bg2); }
+    .tl-hours { width: 40px; flex-shrink: 0; position: relative; border-right: 1px solid var(--border); }
+    .tl-hour { position: absolute; left: 5px; font: 9px 'JetBrains Mono', monospace; color: var(--gray); transform: translateY(-50%); }
+    .tl-col { flex: 1; min-width: 0; position: relative; border-right: 1px solid var(--border); }
+    .tl-col:last-child { border-right: none; }
+    .tl-head { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; border-bottom: 1px solid var(--border); font-size: 9.5px; font-weight: 700; letter-spacing: .1em; }
+    .tl-line { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--border); }
+    .tl-block { position: absolute; left: 3px; right: 3px; padding: 4px 6px; font-size: 10px; line-height: 1.3; overflow: hidden; border-left: 2px solid var(--accent); background: rgba(255,255,255,.1); }
+    .tl-block.new { border-left-color: #FF9F0A; background: rgba(255,150,0,.13); }
+    .tl-block.block { border-left-color: var(--gray); background: repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 6px, transparent 6px 12px); display: flex; align-items: center; justify-content: center; }
+
+    /* ── Owner: controls ── */
+    .stepper { display: flex; align-items: center; border: 1px solid var(--border2); }
+    .stepper button { width: 34px; height: 32px; background: none; border: none; color: var(--white); font-size: 16px; cursor: pointer; }
+    .stepper span { width: 28px; text-align: center; font: 700 13px 'JetBrains Mono', monospace; }
+    .mini-field { background: var(--bg3); border: 1px solid var(--border2); color: var(--white); padding: 7px 8px; font: 12px 'JetBrains Mono', monospace; width: 100%; border-radius: 0; outline: none; -webkit-appearance: none; appearance: none; }
+    .mini-field:focus { border-color: var(--accent); }
+    .toggle { width: 40px; height: 22px; border-radius: 11px; background: var(--bg4); border: none; position: relative; cursor: pointer; flex-shrink: 0; transition: background .2s; }
+    .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; }
+    .toggle.on { background: var(--accent); }
+    .toggle.on::after { transform: translateX(18px); background: #000; }
+    .acc-head { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 14px; background: none; border: none; color: var(--white); font: 700 11.5px 'Inter', sans-serif; letter-spacing: .06em; cursor: pointer; }
+    .svc-row { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; padding: 12px 0; border-top: 1px solid var(--border); }
+    .done-badge { width: 64px; height: 64px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900; margin-bottom: 18px; animation: scaleIn .4s cubic-bezier(.16,1,.3,1) both; }
+
+    /* ── Car Setup Modal ── */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 50; display: flex; align-items: flex-end; animation: fadeIn .2s ease; }
+    .modal-sheet { background: var(--bg2); width: 100%; border-radius: 12px 12px 0 0; border: 1px solid var(--border2); border-bottom: none; max-height: 92vh; overflow-y: auto; animation: sheetUp .38s cubic-bezier(.16,1,.3,1) both; padding-bottom: env(safe-area-inset-bottom, 16px); }
+    .modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 4px; }
+
+    /* ── Input ── */
+    .field { background: var(--bg3); border: 1px solid var(--border2); color: var(--white); padding: 13px 14px; font-family: 'Inter', sans-serif; font-size: 14px; width: 100%; outline: none; transition: border-color .2s; border-radius: 0; }
+    .field:focus { border-color: var(--accent); }
+    .field::placeholder { color: var(--gray); font-size: 13px; }
+    .field-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gray); margin-bottom: 5px; display: block; }
+
+    /* ── Image preview in modal ── */
+    .img-preview { width: 100%; height: 160px; background: var(--bg3); border: 1px solid var(--border); overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
+    .img-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .img-preview .placeholder { color: var(--gray); font-size: 12px; text-align: center; padding: 16px; }
+
+    /* ── TG User banner ── */
+    .tg-banner { background: var(--bg3); border: 1px solid var(--border); padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+    .tg-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--bg4); border: 1.5px solid var(--border2); overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+    .tg-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ── Phone request button ── */
+    .phone-req { display: flex; align-items: center; gap: 10px; border: 1px dashed var(--border2); padding: 13px 14px; cursor: pointer; transition: border-color .15s, background .15s; background: none; width: 100%; font-family: 'Inter', sans-serif; color: var(--gray); }
+    .phone-req:active { border-color: var(--accent); background: rgba(255,255,255,.04); }
+    .phone-req.has-phone { border-style: solid; border-color: var(--accent); background: rgba(255,255,255,.04); color: var(--white); }
+
+    /* ── Demo mode badge ── */
+    .demo-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: rgba(255,150,0,.12); border: 1px solid rgba(255,150,0,.3); color: rgba(255,150,0,.9); font-size: 9px; font-weight: 700; letter-spacing: .1em; }
+
+    /* ── Spinner ── */
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+
+    /* ── Animations ── */
+    @keyframes slideUp   { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes sheetUp   { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes dotPulse  { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.5; transform:scale(.85); } }
+    @keyframes shimmer   { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+    @keyframes fadeIn    { from { opacity:0; } to { opacity:1; } }
+    @keyframes scaleIn   { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
+    @keyframes spin      { to { transform: rotate(360deg); } }
+    @keyframes scan      { 0% { top:-2px; opacity:0; } 10% { opacity:1; } 90% { opacity:1; } 100% { top:100%; opacity:0; } }
+
+    /* ═════════════ MATTE BLACK THEME (overrides everything above) ═════════════ */
+    :root {
+      --bg:      #0A0A0B;
+      --bg2:     #141416;
+      --bg3:     #1B1B1E;
+      --bg4:     #2A2A2E;
+      --accent:  #F4F4F5;
+      --cyan:    #9DB8FF;
+      --white:   #F4F4F5;
+      --gray:    #8A8A90;
+      --ok:      #34D27B;
+      --warn:    #FFA43A;
+      --border:  rgba(255,255,255,0.065);
+      --border2: rgba(255,255,255,0.12);
+      --ease:    cubic-bezier(.2,.8,.2,1);
+    }
+    html, body { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-feature-settings: 'cv11', 'ss01', 'tnum'; -webkit-font-smoothing: antialiased; letter-spacing: -.006em; }
+    #root { background: radial-gradient(130% 55% at 50% -12%, #1C1C20 0%, var(--bg) 62%); }
+    /* fine grain so large black areas read as matte, not flat */
+    body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 300; opacity: .06; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+    h1, h2 { letter-spacing: -.025em !important; font-weight: 600 !important; }
+
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; letter-spacing: -.01em; }
+    .label { font-size: 10.5px; font-weight: 500; letter-spacing: .12em; color: var(--gray); }
+    .sec { margin: 0 4px 10px; }
+    .px { padding-left: 18px; padding-right: 18px; }
+    .screen { padding-bottom: 28px; animation: slideUp .5s var(--ease) both; }
+    .top-line { display: none; }
+
+    /* top bar */
+    .topbar { height: 54px; padding: 0 18px; background: transparent; gap: 8px; }
+    .brand { display: flex; align-items: center; gap: 9px; font: 600 13px/1 'Inter', sans-serif; letter-spacing: .28em; }
+    .seg { border-radius: 999px; padding: 2px; background: rgba(255,255,255,.045); border: 1px solid var(--border); }
+    .seg button { border-radius: 999px; padding: 7px 10px; font: 600 9.5px/1 'Inter', sans-serif; letter-spacing: .08em; color: var(--gray); }
+    .seg button.on { background: var(--white); color: #0A0A0B; box-shadow: 0 1px 6px rgba(0,0,0,.4); }
+    .badge { background: var(--warn); color: #0A0A0B; top: -5px; right: -4px; }
+
+    /* floating glass tab bar */
+    .nav { height: 64px; margin: 0 14px calc(10px + env(safe-area-inset-bottom, 0px)); padding: 0 6px; border-radius: 22px; border: 1px solid var(--border2); border-top: 1px solid var(--border2);
+      background: rgba(24,24,27,.78); backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%); box-shadow: 0 18px 50px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05); }
+    .nav-btn { gap: 4px; color: #6E6E74; }
+    .nav-btn.on { color: var(--white); }
+    .nav-btn.on::after { top: auto; bottom: 6px; width: 4px; height: 4px; border-radius: 50%; background: var(--white); }
+    .nav-label { font-size: 9px; font-weight: 600; letter-spacing: .06em; }
+    .nav-badge { background: var(--warn); color: #0A0A0B; top: 6px; }
+
+    /* buttons */
+    .btn { border-radius: 15px; font: 600 12.5px/1 'Inter', sans-serif; letter-spacing: .08em; transition: transform .18s var(--ease), background .18s, opacity .18s; }
+    .btn:active { transform: scale(.975); }
+    .btn-primary { background: var(--white); color: #0A0A0B; padding: 18px 20px; box-shadow: 0 8px 24px rgba(0,0,0,.35), inset 0 -1px 0 rgba(0,0,0,.12); }
+    .btn-primary:active { background: #D6D6DA; }
+    .btn-ghost { background: rgba(255,255,255,.04); border: 1px solid var(--border2); color: var(--white); }
+    .btn-ghost:active { background: rgba(255,255,255,.09); color: var(--white); border-color: var(--border2); }
+    .btn-sm { padding: 11px 14px; font-size: 10.5px; border-radius: 12px; }
+    .link-btn { font-family: 'Inter', sans-serif; }
+    .icon-btn { width: 34px; height: 34px; border-radius: 11px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--white); cursor: pointer; transition: background .15s; }
+    .icon-btn:active { background: rgba(255,255,255,.12); }
+
+    /* surfaces */
+    .card { border-radius: 20px; background: linear-gradient(180deg, #161618 0%, #121214 100%); border: 1px solid var(--border); box-shadow: inset 0 1px 0 rgba(255,255,255,.035); overflow: hidden; }
+    .spec-row { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .pulse { width: 7px; height: 7px; background: var(--ok); box-shadow: 0 0 0 3px rgba(52,210,123,.16); }
+    .pulse.off { background: var(--gray); box-shadow: none; animation: none; }
+    .pbar { height: 3px; border-radius: 2px; background: rgba(255,255,255,.07); }
+    .pfill { background: var(--white); border-radius: 2px; }
+    .step-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--bg4); color: #0A0A0B; }
+    .step-dot.done { background: var(--white); border-color: var(--white); }
+    .step-dot.active { border-color: var(--white); box-shadow: 0 0 0 4px rgba(255,255,255,.07); }
+    .step-dot.active::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--white); animation: dotPulse 1.6s infinite; }
+
+    /* hero */
+    .hero { position: relative; overflow: hidden; border-radius: 28px; padding: 34px 20px 22px; margin-bottom: 28px; text-align: center;
+      background: radial-gradient(90% 70% at 50% 0%, rgba(255,255,255,.085), transparent 62%), linear-gradient(180deg, #18181B 0%, #0E0E10 100%);
+      border: 1px solid var(--border); box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 28px 60px rgba(0,0,0,.45); }
+    .hero::after { content: ''; position: absolute; left: 50%; top: 0; width: 60%; height: 1px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); }
+    .hero-mark { width: 96px; height: 96px; margin: 0 auto 20px; border-radius: 28px; display: flex; align-items: center; justify-content: center; color: var(--white);
+      background: linear-gradient(150deg, #29292D 0%, #151517 70%); border: 1px solid rgba(255,255,255,.09);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -10px 20px rgba(0,0,0,.35), 0 14px 34px rgba(0,0,0,.65); animation: scaleIn .7s var(--ease) both; }
+    .hero-name { font-size: 28px; line-height: 1; letter-spacing: .34em !important; margin-right: -.34em; font-weight: 600; }
+    .hero-city { font-size: 10.5px; font-weight: 500; letter-spacing: .32em; margin-right: -.32em; color: var(--gray); margin-top: 11px; text-transform: uppercase; }
+    .hero-tag { font-size: 13px; color: #A9A9AF; margin: 16px auto 0; line-height: 1.55; max-width: 290px; }
+    .hero-meta { display: flex; justify-content: center; gap: 6px; margin-top: 20px; flex-wrap: wrap; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; background: rgba(255,255,255,.045); border: 1px solid var(--border); font-size: 11.5px; color: #CFCFD3; white-space: nowrap; }
+    .car-model { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+    .car-year { font-size: 12px; color: var(--gray); margin-top: 4px; }
+    .plate { font: 600 11.5px/1 'JetBrains Mono', monospace; letter-spacing: .06em; padding: 5px 9px; border-radius: 6px; background: #EDEDEF; color: #0A0A0B; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+
+    /* booking */
+    .check-item { border-radius: 16px; margin-bottom: 6px; padding: 15px 16px; background: var(--bg2); border-color: var(--border); }
+    .check-item.on { border-color: rgba(255,255,255,.42); background: rgba(255,255,255,.045); }
+    .checkbox { border-radius: 7px; border-color: var(--bg4); }
+    .checkbox.on { background: var(--white); border-color: var(--white); color: #0A0A0B; }
+    .cat-btn { border-radius: 18px; padding: 16px 14px; gap: 14px; background: linear-gradient(180deg, #161618, #121214); border-color: var(--border); }
+    .cat-btn:active, .cat-btn.on { border-color: rgba(255,255,255,.4); background: rgba(255,255,255,.05); transform: scale(.97); }
+    .cat-ic { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--white); }
+    .tslot { border-radius: 11px; padding: 11px 4px; font-family: 'JetBrains Mono', monospace; background: var(--bg2); }
+    .tslot.sel { background: var(--white); border-color: var(--white); color: #0A0A0B; font-weight: 600; }
+    .tslot.na { opacity: .2; text-decoration: line-through; }
+    .dchip { flex-basis: 54px; border-radius: 16px; padding: 10px 0; background: var(--bg2); border-color: var(--border); font-family: 'Inter', sans-serif; }
+    .dchip.sel { background: var(--white); border-color: var(--white); color: #0A0A0B; }
+    .sdot.on { background: var(--white); }
+    .sdot.done { background: rgba(255,255,255,.35); }
+    .field { border-radius: 13px; background: var(--bg2); border-color: var(--border2); font-family: 'Inter', sans-serif; padding: 14px; }
+    .field:focus { border-color: rgba(255,255,255,.45); }
+    .field-label { font-weight: 500; letter-spacing: .1em; margin-bottom: 7px; }
+    .mini-field { border-radius: 10px; font-family: 'JetBrains Mono', monospace; background: var(--bg2); }
+    .mini-field:focus { border-color: rgba(255,255,255,.45); }
+    .done-badge { background: rgba(52,210,123,.12); color: var(--ok); border: 1px solid rgba(52,210,123,.35); font-size: 26px; }
+
+    /* chips & status */
+    .chip { border-radius: 999px; padding: 4px 9px; font-weight: 600; letter-spacing: .06em; }
+    .chip.ok  { color: var(--ok); border-color: rgba(52,210,123,.35); background: rgba(52,210,123,.08); }
+    .chip.new { color: var(--warn); border-color: rgba(255,164,58,.38); background: rgba(255,164,58,.08); }
+    .chip.ai  { color: var(--cyan); border-color: rgba(157,184,255,.35); background: rgba(157,184,255,.06); }
+    .demo-badge { border-radius: 999px; }
+
+    /* AI */
+    .ai-card { border-radius: 20px; border-color: rgba(157,184,255,.22); background: radial-gradient(120% 120% at 0% 0%, rgba(157,184,255,.12), transparent 60%), linear-gradient(180deg, #161618, #121214); }
+    .msg { border-radius: 18px; }
+    .msg.ai { background: var(--bg3); border-color: var(--border); border-bottom-left-radius: 6px; }
+    .msg.me { background: var(--white); color: #0A0A0B; border-bottom-right-radius: 6px; }
+    .ai-chips button { border-radius: 999px; font-family: 'Inter', sans-serif; background: rgba(255,255,255,.04); border-color: var(--border2); }
+
+    /* sheets, toast */
+    .modal-backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .modal-sheet { border-radius: 26px 26px 0 0; background: #121214; border-color: var(--border2); }
+    .modal-handle { background: rgba(255,255,255,.18); }
+    .toast { bottom: 100px; border-radius: 999px; background: rgba(30,30,33,.92); color: var(--white); border: 1px solid var(--border2); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      font: 600 12px/1 'Inter', sans-serif; letter-spacing: .04em; padding: 13px 20px; box-shadow: 0 14px 40px rgba(0,0,0,.55); }
+
+    /* owner */
+    .tl { border-radius: 18px; overflow: hidden; }
+    .tl-block { border-radius: 8px; border-left-color: var(--ok); background: rgba(52,210,123,.09); }
+    .tl-block.new { border-left-color: var(--warn); background: rgba(255,164,58,.1); }
+    .tl-head, .tl-hour { font-family: 'Inter', sans-serif; }
+    .stepper { border-radius: 12px; overflow: hidden; }
+    .toggle.on { background: var(--ok); }
+    .toggle.on::after { background: #fff; }
+    .acc-head { font-family: 'Inter', sans-serif; font-weight: 600; letter-spacing: .04em; }
+
+    /* loyalty: brushed metal card */
+    .lcard { border-radius: 22px; padding: 22px; border: 1px solid rgba(255,255,255,.1);
+      background: radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.11), transparent 55%), repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px), linear-gradient(135deg, #252528 0%, #111113 48%, #1C1C1F 100%);
+      box-shadow: 0 24px 50px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.09); }
+    .lcard::before { top: 0; left: 0; right: 0; bottom: 0; width: auto; height: auto; transform: none; background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.07) 46%, transparent 62%); animation: sheen 7s ease-in-out infinite; }
+    .tier-badge { background: transparent; color: var(--white); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 4px 10px; font-weight: 600; }
+    .ref-box { border-radius: 14px; }
+    .tg-banner { border-radius: 18px; background: var(--bg2); }
+    .phone-req { border-radius: 16px; font-family: 'Inter', sans-serif; }
+    .phone-req.has-phone { border-color: rgba(52,210,123,.4); background: rgba(52,210,123,.06); }
+    .tline-dot.on { background: var(--white); border-color: var(--white); }
+    @keyframes sheen { 0%,100% { transform: translateX(-35%); } 50% { transform: translateX(35%); } }
+
+    /* owner entry: role chip + PIN lock screen */
+    .brand { margin-right: 0; }
+    .role-chip { font: 600 9px/1 'Inter', sans-serif; letter-spacing: .16em; padding: 6px 9px; border-radius: 999px; border: 1px solid var(--border2); color: var(--gray); }
+    .pin-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 24px calc(28px + env(safe-area-inset-bottom, 0px)); animation: slideUp .5s var(--ease) both; }
+    .pin-sub { font-size: 13px; color: var(--gray); margin-top: 8px; min-height: 18px; transition: color .2s; }
+    .pin-dots { display: flex; gap: 18px; margin: 28px 0 36px; }
+    .pin-dots span { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.35); transition: background .15s, border-color .15s; }
+    .pin-dots span.on { background: var(--white); border-color: var(--white); }
+    .pin-dots.shake { animation: shake .4s; }
+    .pin-dots.shake span { border-color: #FF6B6B; }
+    .pin-dots.shake span.on { background: #FF6B6B; }
+    .keypad { display: grid; grid-template-columns: repeat(3, 74px); gap: 14px 24px; }
+    .keypad button { width: 74px; height: 74px; border-radius: 50%; background: rgba(255,255,255,.055); border: 1px solid var(--border); color: var(--white); font: 400 28px/1 'Inter', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s, transform .12s; }
+    .keypad button.ghost { background: none; border-color: transparent; color: var(--gray); }
+    .keypad button:active { background: rgba(255,255,255,.16); transform: scale(.94); }
+    .pin-demo { margin-top: 28px; font-size: 11px; color: #5F5F66; letter-spacing: .04em; }
+    .empty-car { width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 26px; cursor: pointer; color: var(--white); font-family: inherit; border-style: dashed; border-color: var(--border2); transition: transform .15s var(--ease), border-color .15s; }
+    .empty-car:active { transform: scale(.98); border-color: rgba(255,255,255,.35); }
+    .empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 48px 16px; }
+    .offline-bar { flex-shrink: 0; margin: 0 18px 8px; padding: 9px 12px; border-radius: 12px; font-size: 12px; text-align: center; color: var(--warn); background: rgba(255,164,58,.08); border: 1px solid rgba(255,164,58,.3); }
+    .install-card { padding: 14px; margin-top: 4px; }
+    /* Installed app with a translucent status bar: keep the header below the clock and notch. */
+    .topbar { height: calc(54px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); }
+    .btn.danger { background: rgba(255,90,90,.12); color: #FF7A7A; border: 1px solid rgba(255,90,90,.35); }
+    .at-field { position: relative; }
+    .at-field > span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--gray); font: 13px 'JetBrains Mono', monospace; pointer-events: none; }
+    .at-field .field { padding-left: 30px; }
+    .hero-name.long { font-size: 24px; line-height: 1.15; letter-spacing: .06em !important; margin-right: -.06em; text-wrap: balance; }
+    .consent { display: flex; align-items: flex-start; gap: 10px; margin: 0 2px 14px; font-size: 12.5px; color: #B9B9BE; line-height: 1.45; cursor: pointer; }
+    .consent input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .consent .checkbox { width: 20px; height: 20px; margin-top: 1px; }
+    .consent input:focus-visible + .checkbox { outline: 2px solid var(--white); outline-offset: 2px; }
+    .inline-link { background: none; border: none; padding: 0; color: var(--white); text-decoration: underline; text-underline-offset: 2px; font: inherit; cursor: pointer; }
+    /* The PIN screen must fit short windows (laptops, zoomed browsers): it scrolls, and centres only while it fits. */
+    .pin-screen { justify-content: flex-start; overflow-y: auto; }
+    .pin-screen > :first-child { margin-top: auto; }
+    .pin-screen > :last-child { margin-bottom: auto; }
+    .pin-showcase { display: flex; align-items: center; gap: 12px; margin: -14px 0 22px; padding: 8px 8px 8px 14px; border: 1px dashed var(--border2); border-radius: 14px; font-size: 12px; color: #C9C9CE; }
+    @media (max-height: 760px) {
+      .pin-screen .hero-mark { width: 52px !important; height: 52px !important; border-radius: 16px !important; margin-bottom: 12px !important; }
+      .pin-dots { margin: 18px 0 22px; }
+      .keypad { grid-template-columns: repeat(3, 62px); gap: 10px 22px; }
+      .keypad button { width: 62px; height: 62px; font-size: 24px; }
+      .pin-demo { margin-top: 16px; }
+    }
+    /* On a computer the app is a phone-width column instead of stretching across the screen. */
+    @media (min-width: 700px) {
+      html, body { background: #050506; }
+      #root { max-width: 480px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+      .modal-sheet { max-width: 480px; margin: 0 auto; }
+    }
+    .pin-phone { max-width: 280px; text-align: center; margin-top: 16px; font-size: 15px; }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-9px); } 40%,80% { transform: translateX(9px); } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
+
+/* ═══════════════════ TELEGRAM ═══════════════════ */
+const TG = window.Telegram?.WebApp ?? null;
+function initTelegram() {
+  if (!TG) return null;
+  try {
+    TG.ready(); TG.expand();
+    TG.setHeaderColor('#0A0A0A');
+    TG.setBackgroundColor('#0A0A0A');
+    return TG.initDataUnsafe?.user ?? null;
+  } catch { return null; }
+}
+
+
+/* ═══════════════════ TRANSLATIONS ═══════════════════ */
+const T = {
+  en: {
+    // Nav
+    nav_garage:'GARAGE', nav_book:'BOOK', nav_history:'HISTORY', nav_loyalty:'LOYALTY',
+    // Garage tab
+    my_garage:'MY GARAGE', live:'LIVE', edit_car:'✎ EDIT CAR',
+    current_status:'CURRENT STATUS', in_progress:'IN PROGRESS',
+    repair_name:'Brake System Service',
+    repair_sub:'Front pads & discs replacement · Master: Ivan K.',
+    step_received:'Vehicle received', step_diag:'Diagnostics complete',
+    step_parts:'Parts replaced', step_qc:'Quality control', step_pickup:'Ready for pickup',
+    est_completion:'Est. completion', today_time:'TODAY · 17:30',
+    book_service_btn:'BOOK A SERVICE',
+    // Booking
+    book_title:'BOOK A SERVICE', step_label:'Step', step_of:'/',
+    step1_name:'Category', step2_name:'Services', step3_name:'Date & Time',
+    select_category:'SELECT CATEGORY', back:'← BACK',
+    services_selected: n => `${n} service${n!==1?'s':''} selected`,
+    next:'NEXT →', date_time:'DATE & TIME', times_label:'TIMES',
+    booking_summary:'BOOKING SUMMARY', confirm_booking:'CONFIRM BOOKING',
+    booking_confirmed:'✓ BOOKING CONFIRMED',
+    more: n => `+${n} more`,
+    months:['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],
+    // Categories
+    cats:[
+      {id:'maintenance',icon:'🔧',label:'MAINTENANCE',sub:'Oil · Filters · Fluids'},
+      {id:'brakes',     icon:'◉', label:'BRAKES',     sub:'Pads · Discs · Calipers'},
+      {id:'suspension', icon:'⚙', label:'SUSPENSION', sub:'Shocks · Arms · Align'},
+      {id:'diagnostics',icon:'📡',label:'DIAGNOSTICS',sub:'OBD · Full system scan'},
+      {id:'electrical', icon:'⚡',label:'ELECTRICAL', sub:'Wiring · ECU · Sensors'},
+      {id:'detailing',  icon:'✦', label:'DETAILING',  sub:'Ceramic · PPF · Polish'},
+    ],
+    // Services
+    svcs:{
+      maintenance:[
+        {id:'m1',name:'Engine Oil Change (0W-40 Mobil 1)',price:4800},
+        {id:'m2',name:'Oil Filter Replacement',price:1200},
+        {id:'m3',name:'Air Filter Replacement',price:900},
+        {id:'m4',name:'Cabin Air Filter',price:700},
+        {id:'m5',name:'Spark Plugs - set of 6',price:8400},
+        {id:'m6',name:'Coolant Flush & Refill',price:3600},
+      ],
+      brakes:[
+        {id:'b1',name:'Front Brake Pads (OEM)',price:12000},
+        {id:'b2',name:'Rear Brake Pads (OEM)',price:9600},
+        {id:'b3',name:'Front Brake Discs',price:28000},
+        {id:'b4',name:'Rear Brake Discs',price:24000},
+        {id:'b5',name:'Brake Fluid Flush',price:3200},
+        {id:'b6',name:'Caliper Overhaul (pair)',price:6400},
+      ],
+      suspension:[
+        {id:'su1',name:'Front Shock Absorbers',price:34000},
+        {id:'su2',name:'Rear Shock Absorbers',price:30000},
+        {id:'su3',name:'Control Arm Bushings - set',price:8800},
+        {id:'su4',name:'Wheel Alignment - 4 wheels',price:4200},
+        {id:'su5',name:'Wheel Balance & Rotate',price:2800},
+      ],
+      diagnostics:[
+        {id:'d1',name:'Full OBD Diagnostics',price:3500},
+        {id:'d2',name:'Engine Computer Scan + Report',price:5500},
+        {id:'d3',name:'Transmission Diagnostics',price:4200},
+        {id:'d4',name:'Pre-Purchase Inspection',price:7500},
+      ],
+      electrical:[
+        {id:'e1',name:'AGM Battery Replacement',price:14000},
+        {id:'e2',name:'Alternator Check & Test',price:3800},
+        {id:'e3',name:'Lambda Sensor Replacement',price:6200},
+        {id:'e4',name:'ECU Coding & Adaptation',price:9800},
+      ],
+      detailing:[
+        {id:'dt1',name:'Full Detail & Machine Polish',price:18000},
+        {id:'dt2',name:'Ceramic Coating - full vehicle',price:65000},
+        {id:'dt3',name:'PPF - Hood & Front Bumper',price:42000},
+        {id:'dt4',name:'Interior Deep Clean & Protect',price:8500},
+      ],
+    },
+    // Service Book
+    service_book:'SERVICE BOOK', history_title:'History & Analytics',
+    visits:'VISITS', total_spent:'TOTAL SPENT', next_service:'NEXT SERVICE',
+    current_visit:'CURRENT VISIT', past_visits:'PAST VISITS',
+    all_services:'ALL SERVICES', masters_notes:"MASTER'S NOTES",
+    master_prefix:'Master:',
+    current_service_name:'Brake System Service',
+    current_service_sub:'Ivan K. · 71,240 km',
+    current_service_tags:['Front Pads','Front Discs','Brake Fluid'],
+    history:[
+      {id:1,date:'14 OCT 2025',mileage:'71,240 km',master:'Ivan K.',cost:'7,600 ₽',services:['Engine Oil Change (0W-40)','Oil Filter Replacement','Air Filter','Cabin Filter'],notes:'Rear control arm bushings at ~65% wear. Recommend replacement within 5,000 km. Front tyre tread at 3.2 mm - plan winter swap before Nov.'},
+      {id:2,date:'03 JUL 2025',mileage:'68,100 km',master:'Dmitry V.',cost:'15,200 ₽',services:['Front Brake Pads (OEM)','Brake Fluid Flush'],notes:'Brake discs at 18.4 mm (min 17 mm). Inspect again at 72,000 km or 12 months. Calipers sliding freely.'},
+      {id:3,date:'18 MAR 2025',mileage:'64,500 km',master:'Ivan K.',cost:'9,700 ₽',services:['Full OBD Diagnostics','Lambda Sensor Replacement (upstream)'],notes:'P0171 & P0174 cleared. Engine mixture corrected. Running within spec post-repair.'},
+      {id:4,date:'22 NOV 2024',mileage:'61,000 km',master:'Sergei M.',cost:'7,700 ₽',services:['Wheel Alignment - 4 wheels','Wheel Balance & Rotate','Cabin Filter'],notes:'Alignment corrected following reported kerb strike. Caster, camber, toe all within factory spec. Road-tested.'},
+    ],
+    // Loyalty
+    loyalty_program:'LOYALTY PROGRAM', loyalty_title:'GARAGE BLACK',
+    tg_identity:'TELEGRAM IDENTITY', no_username:'No username set',
+    share_phone:'Share phone number via Telegram', tap:'TAP →',
+    requesting:'Requesting…', verified:'VERIFIED',
+    member_since:'MEMBER SINCE 2023', cashback_balance:'CASHBACK BALANCE',
+    approx_value:'≈ VALUE', pts:'PTS', next_tier:'Next:',
+    pts_to_unlock:'pts to unlock', your_perks:'YOUR PERKS',
+    perks:[
+      {icon:'⚡',t:'Priority Booking',d:'2-hour advance slots reserved for you'},
+      {icon:'✦', t:'7% Cashback',      d:'On every service visit'},
+      {icon:'🔧',t:'Free Diagnostics', d:'Once per quarter, any vehicle'},
+      {icon:'🚗',t:'Courtesy Car',     d:'For jobs lasting 3+ hours'},
+    ],
+    refer_title:'REFER A FRIEND',
+    refer_body: pts => <>Earn <span style={{color:'var(--accent)',fontWeight:700}}>{pts}</span> for every friend who books their first service.</>,
+    refer_pts:'500 PTS',
+    copied:'✓ COPIED', copy:'⊕ COPY',
+    refer_stats:'3 friends referred this month · 1,500 PTS earned',
+    demo:'DEMO',
+    // Car setup modal
+    edit_car_title:'Edit My Car',
+    make_label:'Make', year_label:'Year', model_label:'Model',
+    plate_label:'Plate', vin_label:'VIN',
+    vehicle_photo:'VEHICLE PHOTO',
+    searching_wiki:'Searching Wikipedia…',
+    find_photo_hint:<>Click <strong style={{color:'var(--white)'}}>"Find Photo"</strong> to auto-search,<br/>or paste a URL below.</>,
+    photo_not_found:'Photo not found - try adjusting the make/model, or paste a URL below.',
+    could_not_load:'Could not load image.',
+    find_photo_btn:'🔍 FIND PHOTO (Wikipedia)',
+    searching_btn:<><div className="spinner"/>&nbsp;Searching…</>,
+    paste_url_label:'Or paste image URL',
+    make_placeholder:'BMW, Porsche…', year_placeholder:'2022',
+    model_placeholder:'M3 Competition, 911 GT3…',
+    plate_placeholder:'А 001 АА', url_placeholder:'https://…',
+    save_car:'✓ SAVE CAR',
+  },
+  ru: {
+    nav_garage:'ГАРАЖ', nav_book:'ЗАПИСЬ', nav_history:'ИСТОРИЯ', nav_loyalty:'БОНУСЫ',
+    my_garage:'МОЙ ГАРАЖ', live:'В СЕТИ', edit_car:'✎ АВТО',
+    current_status:'ТЕКУЩИЙ СТАТУС', in_progress:'В РАБОТЕ',
+    repair_name:'Обслуживание тормозной системы',
+    repair_sub:'Замена передних колодок и дисков · Мастер: Иван К.',
+    step_received:'Автомобиль принят', step_diag:'Диагностика завершена',
+    step_parts:'Запчасти заменены', step_qc:'Контроль качества', step_pickup:'Готов к выдаче',
+    est_completion:'Ожид. завершение', today_time:'СЕГОДНЯ · 17:30',
+    book_service_btn:'ЗАПИСАТЬСЯ',
+    book_title:'ЗАПИСЬ НА СЕРВИС', step_label:'Шаг', step_of:'/',
+    step1_name:'Категория', step2_name:'Услуги', step3_name:'Дата и время',
+    select_category:'ВЫБЕРИТЕ КАТЕГОРИЮ', back:'← НАЗАД',
+    services_selected: n => `${n} ${n===1?'услуга':n>=2&&n<=4?'услуги':'услуг'} выбрано`,
+    next:'ДАЛЕЕ →', date_time:'ДАТА И ВРЕМЯ', times_label:'ВРЕМЯ',
+    booking_summary:'СВОДКА ЗАПИСИ', confirm_booking:'ПОДТВЕРДИТЬ ЗАПИСЬ',
+    booking_confirmed:'✓ ЗАПИСЬ ПОДТВЕРЖДЕНА',
+    more: n => `+${n} ещё`,
+    months:['ЯНВ','ФЕВ','МАР','АПР','МАЙ','ИЮН','ИЮЛ','АВГ','СЕН','ОКТ','НОЯ','ДЕК'],
+    cats:[
+      {id:'maintenance',icon:'🔧',label:'ТО',          sub:'Масло · Фильтры · Жидкости'},
+      {id:'brakes',     icon:'◉', label:'ТОРМОЗА',     sub:'Колодки · Диски · Суппорты'},
+      {id:'suspension', icon:'⚙', label:'ПОДВЕСКА',    sub:'Амортизаторы · Рычаги · Развал'},
+      {id:'diagnostics',icon:'📡',label:'ДИАГНОСТИКА', sub:'ОБД · Полная диагностика'},
+      {id:'electrical', icon:'⚡',label:'ЭЛЕКТРИКА',   sub:'Проводка · ЭБУ · Датчики'},
+      {id:'detailing',  icon:'✦', label:'ДЕТЕЙЛИНГ',   sub:'Керамика · ППФ · Полировка'},
+    ],
+    svcs:{
+      maintenance:[
+        {id:'m1',name:'Замена моторного масла (0W-40 Mobil 1)',price:4800},
+        {id:'m2',name:'Замена масляного фильтра',price:1200},
+        {id:'m3',name:'Замена воздушного фильтра',price:900},
+        {id:'m4',name:'Замена салонного фильтра',price:700},
+        {id:'m5',name:'Свечи зажигания - комплект 6 шт.',price:8400},
+        {id:'m6',name:'Замена антифриза',price:3600},
+      ],
+      brakes:[
+        {id:'b1',name:'Передние тормозные колодки (OEM)',price:12000},
+        {id:'b2',name:'Задние тормозные колодки (OEM)',price:9600},
+        {id:'b3',name:'Передние тормозные диски',price:28000},
+        {id:'b4',name:'Задние тормозные диски',price:24000},
+        {id:'b5',name:'Замена тормозной жидкости',price:3200},
+        {id:'b6',name:'Восстановление суппортов (пара)',price:6400},
+      ],
+      suspension:[
+        {id:'su1',name:'Передние амортизаторы',price:34000},
+        {id:'su2',name:'Задние амортизаторы',price:30000},
+        {id:'su3',name:'Сайлентблоки рычагов - комплект',price:8800},
+        {id:'su4',name:'Развал-схождение - 4 колеса',price:4200},
+        {id:'su5',name:'Балансировка и ротация колёс',price:2800},
+      ],
+      diagnostics:[
+        {id:'d1',name:'Полная диагностика OBD',price:3500},
+        {id:'d2',name:'Компьютерная диагностика + отчёт',price:5500},
+        {id:'d3',name:'Диагностика АКПП/МКПП',price:4200},
+        {id:'d4',name:'Предпродажная проверка',price:7500},
+      ],
+      electrical:[
+        {id:'e1',name:'Замена АКБ (AGM)',price:14000},
+        {id:'e2',name:'Проверка генератора',price:3800},
+        {id:'e3',name:'Замена лямбда-зонда',price:6200},
+        {id:'e4',name:'Кодирование и адаптация ЭБУ',price:9800},
+      ],
+      detailing:[
+        {id:'dt1',name:'Полная полировка кузова',price:18000},
+        {id:'dt2',name:'Керамическое покрытие - весь кузов',price:65000},
+        {id:'dt3',name:'ППФ - капот и передний бампер',price:42000},
+        {id:'dt4',name:'Химчистка и защита салона',price:8500},
+      ],
+    },
+    service_book:'СЕРВИСНАЯ КНИГА', history_title:'История и аналитика',
+    visits:'ВИЗИТЫ', total_spent:'ПОТРАЧЕНО', next_service:'СЛЕД. ТО',
+    current_visit:'ТЕКУЩИЙ ВИЗИТ', past_visits:'ПРОШЛЫЕ ВИЗИТЫ',
+    all_services:'ВСЕ УСЛУГИ', masters_notes:'ЗАМЕТКИ МАСТЕРА',
+    master_prefix:'Мастер:',
+    current_service_name:'Обслуживание тормозной системы',
+    current_service_sub:'Иван К. · 71 240 км',
+    current_service_tags:['Пер. колодки','Пер. диски','Торм. жидкость'],
+    history:[
+      {id:1,date:'14 ОКТ 2025',mileage:'71 240 км',master:'Иван К.',cost:'7 600 ₽',services:['Замена масла (0W-40)','Замена масляного фильтра','Воздушный фильтр','Салонный фильтр'],notes:'Сайлентблоки задних рычагов изношены на ~65%. Рекомендую замену в течение 5 000 км. Протектор передних шин 3.2 мм - запланировать зимнюю замену до ноября.'},
+      {id:2,date:'03 ИЮЛ 2025',mileage:'68 100 км',master:'Дмитрий В.',cost:'15 200 ₽',services:['Передние тормозные колодки (OEM)','Замена тормозной жидкости'],notes:'Тормозные диски 18.4 мм (минимум 17 мм). Повторная проверка на 72 000 км или через 12 мес. Суппорты двигаются свободно.'},
+      {id:3,date:'18 МАР 2025',mileage:'64 500 км',master:'Иван К.',cost:'9 700 ₽',services:['Полная диагностика OBD','Замена лямбда-зонда (верхний)'],notes:'Ошибки P0171 и P0174 устранены. Топливная смесь скорректирована. Параметры в норме после ремонта.'},
+      {id:4,date:'22 НОЯ 2024',mileage:'61 000 км',master:'Сергей М.',cost:'7 700 ₽',services:['Развал-схождение - 4 колеса','Балансировка и ротация колёс','Салонный фильтр'],notes:'Углы развала скорректированы после удара о бордюр. Кастер, развал, схождение в допусках завода. Проверка на ходу выполнена.'},
+    ],
+    loyalty_program:'ПРОГРАММА ЛОЯЛЬНОСТИ', loyalty_title:'GARAGE BLACK',
+    tg_identity:'ТЕЛЕГРАМ ПРОФИЛЬ', no_username:'Username не задан',
+    share_phone:'Поделиться номером через Telegram', tap:'ТАП →',
+    requesting:'Запрос…', verified:'ПОДТВЕРЖДЁН',
+    member_since:'УЧАСТНИК С 2023', cashback_balance:'БАЛАНС КЕШБЭКА',
+    approx_value:'≈ СТОИМОСТЬ', pts:'ОЧК', next_tier:'Следующий:',
+    pts_to_unlock:'очков до разблокировки', your_perks:'ВАШИ ПРИВИЛЕГИИ',
+    perks:[
+      {icon:'⚡',t:'Приоритетная запись',    d:'Бронирование за 2 часа для вас'},
+      {icon:'✦', t:'Кешбэк 7%',              d:'С каждого визита'},
+      {icon:'🔧',t:'Бесплатная диагностика', d:'Раз в квартал, любой автомобиль'},
+      {icon:'🚗',t:'Автомобиль замены',       d:'При работах от 3 часов'},
+    ],
+    refer_title:'ПРИГЛАСИ ДРУГА',
+    refer_body: pts => <>Получи <span style={{color:'var(--accent)',fontWeight:700}}>{pts}</span> за каждого друга, который запишется на первый визит.</>,
+    refer_pts:'500 ОЧК',
+    copied:'✓ СКОПИРОВАНО', copy:'⊕ КОПИРОВАТЬ',
+    refer_stats:'3 друга приглашены в этом месяце · заработано 1 500 очков',
+    demo:'ДЕМО',
+    edit_car_title:'Редактировать авто',
+    make_label:'Марка', year_label:'Год', model_label:'Модель',
+    plate_label:'Номер', vin_label:'ВИН',
+    vehicle_photo:'ФОТО АВТОМОБИЛЯ',
+    searching_wiki:'Поиск на Wikipedia…',
+    find_photo_hint:<>Нажми <strong style={{color:'var(--white)'}}>"Найти фото"</strong> для автопоиска,<br/>или вставь URL ниже.</>,
+    photo_not_found:'Фото не найдено - попробуй изменить марку/модель или вставь URL.',
+    could_not_load:'Не удалось загрузить изображение.',
+    find_photo_btn:'🔍 НАЙТИ ФОТО (Wikipedia)',
+    searching_btn:<><div className="spinner"/>&nbsp;Поиск…</>,
+    paste_url_label:'Или вставь URL изображения',
+    make_placeholder:'BMW, Porsche…', year_placeholder:'2022',
+    model_placeholder:'M3, 911 GT3…',
+    plate_placeholder:'А 001 АА', url_placeholder:'https://…',
+    save_car:'✓ СОХРАНИТЬ АВТО',
+  },
+};
+
+Object.assign(T.en, {
+  client:'CLIENT', owner:'OWNER',
+  step4_name:'Contacts', contacts:'CONTACTS', your_name:'Your name', your_phone:'Phone',
+  share_tg_phone:'Fill from Telegram', name_ph:'Ivan', phone_ph:'+7 900 000-00-00',
+  dur_fmt:(h,m) => h ? `${h}h${m ? ` ${m}m` : ''}` : `${m}m`,
+  total_dur:'Duration', box:'Box', closed_day:'CLOSED',
+  no_slots:'No free slots this day - pick another date', slot_taken:'This slot was just taken - pick another',
+  today:'Today', tomorrow:'Tomorrow', wd:['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  date_lbl:'Date', time_lbl:'Time', total_lbl:'Total', status_lbl:'Status',
+  booking_done_title:'You are booked!', booking_no:'BOOKING #',
+  owner_notified:'The workshop got your request instantly - no calls needed. Status updates appear on the Garage tab.',
+  my_bookings_btn:'MY BOOKINGS', new_booking_btn:'NEW BOOKING', my_bookings:'MY BOOKINGS',
+  st_new:'Awaiting confirmation', st_confirmed:'Confirmed', st_cancelled:'Cancelled', st_done:'Completed',
+  ai_card_title:'AI ASSISTANT', ai_card_sub:'Describe the problem - I will pick services and a free slot',
+  ai_title:'AI Assistant', ai_demo:'DEMO · RULE-BASED · PRODUCTION: CLAUDE API',
+  ai_hello:'Hi! Describe what is wrong with the car and when it suits you. For example: “brakes squeak, tomorrow after lunch”.',
+  ai_chips:['Brakes squeak, tomorrow afternoon','Oil change on Saturday morning','Check engine light is on','Battery is dead, today evening'],
+  ai_ph:'Describe the problem…',
+  ai_found:(names,dur,total) => `Looks like you need: ${names} (≈ ${dur}, ${total}).`,
+  ai_unsure:'Not sure what exactly is needed - I suggest starting with diagnostics.',
+  ai_slot:(when,time,box) => `Nearest free slot: ${when}, ${time} · Box ${box}.`,
+  ai_moved:'The requested day is full - here is the nearest option.',
+  ai_none:'No free slots in the next 2 weeks - please call the workshop.',
+  ai_book:'BOOK THIS', ai_other:'OTHER TIME', ai_need_phone:'SHARE PHONE', ai_no_more:'No later slots in the next 2 weeks.',
+  ai_booked:n => `Done! Booking #${n} created - the workshop has been notified.`,
+  install_title:'Install the app', install_sub:'An icon on your home screen - opens straight away, without Telegram or the browser',
+  install_btn:'INSTALL', install_ios:'Tap Share ⬆︎ at the bottom of Safari, then “Add to Home Screen”',
+  install_ios_other:'Open this page in Safari, tap Share ⬆︎ and “Add to Home Screen”',
+  install_other:'Open the browser menu ⋮ and choose “Install app” or “Add to Home screen”',
+  install_tg_btn:'OPEN IN BROWSER', install_tg_icon:'TELEGRAM ICON',
+  install_tg_android:'The app opens in Chrome - tap “Install” there and GARAGE will launch like a regular app.',
+  install_tg_ios:'The app opens in Safari - tap Share ⬆︎ and “Add to Home Screen”. The icon will open GARAGE like a regular app.',
+  shop:'WORKSHOP', call:'CALL',
+  o_bookings:'REQUESTS', o_schedule:'SCHEDULE', o_services:'SERVICES',
+  o_title:'Owner Dashboard', o_new:'NEW', o_today:'TODAY', o_week:'NEXT 7 DAYS',
+  o_problem:'0 missed calls', o_problem_sub:'Clients book themselves 24/7 - every request lands here instantly, even while you are under a car',
+  o_hint:'Demo: open this page in a second window in CLIENT mode and make a booking - it appears here live.',
+  o_new_list:'NEW REQUESTS', o_upcoming:'CONFIRMED · UPCOMING', o_empty:'No new requests - all handled ✓',
+  o_confirm:'CONFIRM', o_cancel:'DECLINE', src_ai:'AI',
+  o_close_day:'CLOSE DAY', o_open_day:'OPEN DAY', o_day_closed:'Day is closed for booking',
+  o_block:'BLOCK', o_unblock:'UNBLOCK', o_blocked:'BOX BLOCKED',
+  o_settings:'SETTINGS', o_boxes:'Boxes (lifts)', o_hours:'Working hours',
+  o_services_title:'Services & Prices', o_services_sub:'Changes reach the client app instantly - no code',
+  o_price:'Price, ₽', o_dur:'Duration',
+  o_profile:'WORKSHOP PROFILE', o_shop_name:'Name', o_shop_addr:'Address', o_shop_phone:'Phone',
+  o_new_toast:'NEW BOOKING', o_reset:'RESET DEMO DATA',
+});
+Object.assign(T.ru, {
+  client:'КЛИЕНТ', owner:'ВЛАДЕЛЕЦ',
+  step4_name:'Контакты', contacts:'КОНТАКТЫ', your_name:'Ваше имя', your_phone:'Телефон',
+  share_tg_phone:'Взять из Telegram', name_ph:'Иван', phone_ph:'+7 900 000-00-00',
+  dur_fmt:(h,m) => h ? `${h} ч${m ? ` ${m} мин` : ''}` : `${m} мин`,
+  total_dur:'Длительность', box:'Бокс', closed_day:'ЗАКРЫТО',
+  no_slots:'На этот день свободных окон нет - выберите другую дату', slot_taken:'Это окно только что заняли - выберите другое',
+  today:'Сегодня', tomorrow:'Завтра', wd:['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'],
+  date_lbl:'Дата', time_lbl:'Время', total_lbl:'Итого', status_lbl:'Статус',
+  booking_done_title:'Вы записаны!', booking_no:'ЗАПИСЬ №',
+  owner_notified:'Сервис получил заявку мгновенно - звонить не нужно. Статус обновится на вкладке «Гараж».',
+  my_bookings_btn:'МОИ ЗАПИСИ', new_booking_btn:'НОВАЯ ЗАПИСЬ', my_bookings:'МОИ ЗАПИСИ',
+  st_new:'Ждёт подтверждения', st_confirmed:'Подтверждена', st_cancelled:'Отменена', st_done:'Выполнена',
+  ai_card_title:'ИИ-АССИСТЕНТ', ai_card_sub:'Опишите проблему - подберу услуги и свободное окно',
+  ai_title:'ИИ-ассистент', ai_demo:'ДЕМО · НА ПРАВИЛАХ · В ПРОДЕ: CLAUDE API',
+  ai_hello:'Привет! Опишите, что с машиной и когда вам удобно. Например: «скрипят тормоза, завтра после обеда».',
+  ai_chips:['Скрипят тормоза, завтра после обеда','Замена масла в субботу утром','Горит чек двигателя','Не заводится, сегодня вечером'],
+  ai_ph:'Опишите проблему…',
+  ai_found:(names,dur,total) => `Похоже, нужно: ${names} (≈ ${dur}, ${total}).`,
+  ai_unsure:'Не уверен, что именно нужно - предлагаю начать с диагностики.',
+  ai_slot:(when,time,box) => `Ближайшее свободное окно: ${when}, ${time} · Бокс ${box}.`,
+  ai_moved:'На запрошенный день всё занято - вот ближайший вариант.',
+  ai_none:'Свободных окон на 2 недели нет - позвоните в сервис.',
+  ai_book:'ЗАПИСАТЬСЯ', ai_other:'ДРУГОЕ ВРЕМЯ', ai_need_phone:'ДАТЬ НОМЕР', ai_no_more:'Более поздних окон на 2 недели нет.',
+  ai_booked:n => `Готово! Запись №${n} создана - сервис уже получил уведомление.`,
+  install_title:'Установить приложение', install_sub:'Значок на экране телефона - открывается сразу, без Telegram и браузера',
+  install_btn:'УСТАНОВИТЬ', install_ios:'Нажмите «Поделиться» ⬆︎ внизу Safari, затем «На экран „Домой“»',
+  install_ios_other:'Откройте эту страницу в Safari, нажмите «Поделиться» ⬆︎ и «На экран „Домой“»',
+  install_other:'Откройте меню браузера ⋮ и выберите «Установить приложение» или «Добавить на главный экран»',
+  install_tg_btn:'ОТКРЫТЬ В БРАУЗЕРЕ', install_tg_icon:'ЗНАЧОК TELEGRAM',
+  install_tg_android:'Приложение откроется в Chrome - нажмите там «Установить», и GARAGE будет запускаться как обычное приложение.',
+  install_tg_ios:'Приложение откроется в Safari - нажмите «Поделиться» ⬆︎ и «На экран „Домой“». Значок будет открывать GARAGE как обычное приложение.',
+  shop:'АВТОСЕРВИС', call:'ПОЗВОНИТЬ',
+  o_bookings:'ЗАЯВКИ', o_schedule:'РАСПИСАНИЕ', o_services:'УСЛУГИ',
+  o_title:'Кабинет владельца', o_new:'НОВЫЕ', o_today:'СЕГОДНЯ', o_week:'7 ДНЕЙ',
+  o_problem:'0 пропущенных звонков', o_problem_sub:'Клиенты записываются сами 24/7 - каждая заявка приходит сюда мгновенно, даже когда вы под машиной',
+  o_hint:'Демо: откройте эту страницу во втором окне в режиме КЛИЕНТ и запишитесь - заявка появится здесь вживую.',
+  o_new_list:'НОВЫЕ ЗАЯВКИ', o_upcoming:'ПОДТВЕРЖДЁННЫЕ · ПРЕДСТОЯЩИЕ', o_empty:'Новых заявок нет - всё обработано ✓',
+  o_confirm:'ПОДТВЕРДИТЬ', o_cancel:'ОТКЛОНИТЬ', src_ai:'ИИ',
+  o_close_day:'ЗАКРЫТЬ ДЕНЬ', o_open_day:'ОТКРЫТЬ ДЕНЬ', o_day_closed:'День закрыт для записи',
+  o_block:'БЛОК', o_unblock:'СНЯТЬ', o_blocked:'БОКС ЗАБЛОКИРОВАН',
+  o_settings:'НАСТРОЙКИ', o_boxes:'Боксы (подъёмники)', o_hours:'Часы работы',
+  o_services_title:'Услуги и цены', o_services_sub:'Изменения сразу видны клиентам - без кода',
+  o_price:'Цена, ₽', o_dur:'Длительность',
+  o_profile:'ПРОФИЛЬ СЕРВИСА', o_shop_name:'Название', o_shop_addr:'Адрес', o_shop_phone:'Телефон',
+  o_new_toast:'НОВАЯ ЗАПИСЬ', o_reset:'СБРОСИТЬ ДЕМО-ДАННЫЕ',
+});
+
+/* ═══════════════════ LANG CONTEXT ═══════════════════ */
+const LangCtx = createContext({ l: T.ru, lang: 'ru', setLang: () => {} });
+const useLang = () => useContext(LangCtx);
+
+/* ═══════════════════ HELPERS ═══════════════════ */
+const fmt = n => n.toLocaleString('ru-RU') + ' ₽';
+function ls_get(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; } }
+function ls_set(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+const pad = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const kdate = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const nextDays = n => Array.from({ length:n }, (_, i) => addDays(new Date(), i));
+const toMin = t => { const [h,m] = t.split(':').map(Number); return h*60 + m; };
+const toHM = m => `${pad(Math.floor(m/60))}:${pad(m%60)}`;
+const fmtDur = (m, l) => l.dur_fmt(Math.floor(m/60), m%60);
+const fmtDay = (k, l) => { const d = kdate(k); return `${d.getDate()} ${l.months[d.getMonth()]}`; };
+const telHref = p => 'tel:' + (p || '').replace(/[^\d+]/g, '');
+const cmpB = (a, b) => (a.date + a.start).localeCompare(b.date + b.start);
+function dayLabel(k, l) {
+  if (k === dkey(new Date())) return l.today;
+  if (k === dkey(addDays(new Date(), 1))) return l.tomorrow;
+  const d = kdate(k);
+  return `${l.wd[(d.getDay()+6)%7]} ${fmtDay(k, l)}`;
+}
+
+/* ═══════════════════ DATA LAYER ═══════════════════ */
+// Booking rules live in core.js, shared with the /api/db server function.
+// With the server (Vercel) every device sees the same bookings; without it (local preview) data stays in this browser.
+const { SVC_DUR, emptyDB, seedDB, applyOp, ownerAuthOk, isOwnerUser } = window.GarageCore;
+const freeSlots = (db, date, dur) => window.GarageCore.freeSlots(db, date, dur, new Date());
+
+// Each workshop has its own link: ?s=<slug>. Without it the demo workshop opens.
+const QS = new URLSearchParams(location.search);
+// A link t.me/<bot>?startapp=s_<slug> opens the Mini App directly and passes the workshop as start_param.
+// startapp=o_<slug> opens that workshop's owner dashboard inside Telegram.
+const START_RAW = TG?.initDataUnsafe?.start_param || '';
+const START_PARAM = START_RAW.replace(/^[so]_/, '');
+const ASKED_TENANT = [QS.get('s'), START_PARAM].find(v => /^[a-z0-9][a-z0-9-]{2,39}$/.test(v || '')) || 'demo';
+// The showcase in a browser is a private sandbox kept by this browser (in Telegram the server picks it by account),
+// so every visitor starts from a clean demo and nobody sees someone else's test bookings.
+function browserSandbox() {
+  let id = ls_get('garage_sbx', '');
+  if (!window.GarageCore.isSandbox(id)) {
+    id = 'sbx-' + Array.from(crypto.getRandomValues(new Uint8Array(20)), b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
+    ls_set('garage_sbx', id);
+  }
+  return id;
+}
+const APP_MODE = QS.get('app') === 'register' ? 'register' : QS.get('app') === 'owner' || /^o_/.test(START_RAW) ? 'owner' : 'client';
+// The bot opened without a workshop link: the server may send a visitor to their private demo instead (see boot).
+const TENANT_GIVEN = !!(QS.get('s') || START_PARAM);
+const DB_KEY = 'garage_db_v1';
+// The workshop and everything keyed by it; boot() may switch the bot's default demo to the visitor's private one.
+let TENANT, IS_SHOWCASE, IS_DEMO, DEMO_SUFFIX, PROFILE_KEY, CAR_KEY, CAR_PROMPTED_KEY, CACHE_KEY, MY_KEY, PHONE_KEY;
+function setTenant(t) {
+  TENANT = t;
+  // The public showcase for the sales page: PIN shown on the sign-in screen, owner fields locked on the server.
+  IS_SHOWCASE = window.GarageCore.isShowcase(TENANT);
+  IS_DEMO = TENANT === 'demo' || IS_SHOWCASE;
+  // What a demo visitor types (name, phone, car) is kept apart from their data in real workshops and wiped with each new demo.
+  DEMO_SUFFIX = IS_SHOWCASE ? ':demo' : '';
+  PROFILE_KEY = 'garage_profile' + DEMO_SUFFIX; CAR_KEY = 'garage_car' + DEMO_SUFFIX; CAR_PROMPTED_KEY = 'garage_car_prompted' + DEMO_SUFFIX;
+  CACHE_KEY = `garage_cache:${TENANT}`;
+  MY_KEY = TENANT === 'demo' ? 'garage_my' : `garage_my:${TENANT}`;
+  PHONE_KEY = `garage_owner_phone:${TENANT}`;
+}
+setTenant(ASKED_TENANT === window.GarageCore.SHOWCASE && !TG?.initData ? browserSandbox() : ASKED_TENANT);
+// Owner session token: kept in memory only, so closing the app (or the bot) always asks for the PIN again.
+let OWNER_SESSION = null;
+// Earlier versions kept the owner PIN and full owner data (client phones) on the device: remove them.
+(function wipeOldSecrets() {
+  try {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('garage_owner:')) localStorage.removeItem(k);
+      if (k.startsWith('garage_cache:')) {
+        const s = ls_get(k, null)?.settings || {};
+        if ('pin' in s || 'pinHash' in s || 'ownerPhone' in s) localStorage.removeItem(k);
+      }
+    });
+  } catch {}
+})();
+let REMOTE = false;
+let ROLE = 'client';
+let TENANT_MISSING = false;
+let OWNER_BY_TG = false;
+
+const tgUser0 = () => (TG?.initData ? TG.initDataUnsafe?.user ?? null : null);
+const tgUserId = () => tgUser0()?.id ?? null;
+const todayKey = () => dkey(new Date());
+
+// Without the server (static hosting) the showcase runs in this browser and starts over 3 hours after it was created.
+const LOCAL_DEMO_TTL = 3 * 3600 * 1000;
+function loadDB() {
+  const v = ls_get(REMOTE ? CACHE_KEY : DB_KEY, null);
+  const stale = !REMOTE && IS_SHOWCASE && v && !(Date.now() - (v.localSeededAt || 0) < LOCAL_DEMO_TTL);
+  if (v && Array.isArray(v.bookings) && !stale) return v;
+  if (REMOTE) return emptyDB();
+  if (stale) [MY_KEY, PROFILE_KEY, CAR_KEY, CAR_PROMPTED_KEY].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+  const s = seedDB(IS_SHOWCASE); s.localSeededAt = Date.now(); ls_set(DB_KEY, s); return s;
+}
+
+const myBookings = () => ls_get(MY_KEY, []).filter(x => x && typeof x === 'object' && x.id && x.key);
+const addMine = b => ls_set(MY_KEY, [...myBookings(), { id:b.id, key:b.key }]);
+const isMine = b => myBookings().some(m => m.id === b.id && m.key === b.key);
+// Everything this browser keeps about the client, for "delete my data".
+function wipeClientData() {
+  try {
+    Object.keys(localStorage).forEach(k => {
+      if (/^garage_(profile|car|car_prompted|my|db_v1)(:demo)?$/.test(k) || k.startsWith('garage_my:') || k.startsWith('garage_cache:')) localStorage.removeItem(k);
+    });
+  } catch {}
+}
+
+async function apiCall(body) {
+  const r = await fetch('/api/db', {
+    method:'POST', headers:{ 'Content-Type':'application/json' },
+    body:JSON.stringify({ t:TENANT, tg:TG?.initData || '', ...body }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error || `http_${r.status}`); e.code = j.error || 'network'; e.status = r.status; throw e; }
+  return j;
+}
+
+// Before the first render: is there a server, does this workshop exist, and is the visitor its owner?
+async function boot() {
+  try {
+    const r = await fetch('/api/db', { cache:'no-store' });
+    REMOTE = r.ok && (await r.json()).ok === true;
+  } catch { REMOTE = false; }
+  if (APP_MODE === 'register') return;
+  let ownerByTg = false;
+  if (REMOTE) {
+    try {
+      let res = await apiCall({ action:'public', mine:myBookings(), dflt:!TENANT_GIVEN });
+      // Opened from the bot without a link by someone other than the demo owner: show them their own clean demo.
+      if (res.useShowcase) { setTenant(window.GarageCore.SHOWCASE); res = await apiCall({ action:'public', mine:myBookings() }); }
+      ownerByTg = !!res.owner;
+      // A brand-new demo: forget the visitor's earlier demo bookings, name, phone and car.
+      if (res.fresh && IS_SHOWCASE) [MY_KEY, PROFILE_KEY, CAR_KEY, CAR_PROMPTED_KEY].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+      ls_set(CACHE_KEY, res.db);
+    } catch (e) { if (e.status === 404) TENANT_MISSING = true; }
+  } else {
+    ownerByTg = isOwnerUser(loadDB(), tgUser0());
+  }
+  OWNER_BY_TG = ownerByTg;
+  ROLE = APP_MODE === 'owner' || ownerByTg ? 'owner' : 'client';
+}
+
+const DBCtx = createContext(null);
+const useDB = () => useContext(DBCtx);
+
+function svcList(l, db, cat) {
+  return (l.svcs[cat] || []).map(s => ({ ...s, dur: SVC_DUR[s.id] || 60, ...(db.overrides[s.id] || {}) }));
+}
+function svcById(l, db, id) {
+  for (const c in l.svcs) { const s = svcList(l, db, c).find(x => x.id === id); if (s) return s; }
+  return null;
+}
+const svcNames = (ids, l, db) => (ids || []).map(id => svcById(l, db, id)?.name).filter(Boolean).join(', ');
+const carLine = c => (c ? [c.make, c.model, c.year].filter(Boolean).join(' ') : '');
+const carBrief = c => (c && c.make ? { make:c.make, model:c.model, year:c.year, plate:c.plate } : null);
+// Live status for the client: a confirmed visit that is happening right now reads "in work".
+function liveStatus(b) {
+  if (b.status !== 'confirmed' || b.date !== todayKey()) return b.status;
+  const now = new Date(), m = now.getHours()*60 + now.getMinutes(), s = toMin(b.start);
+  return m >= s && m < s + b.dur ? 'in_work' : b.status;
+}
+
+
+/* ═══════════════════ AI ASSISTANT (demo, rule-based) ═══════════════════ */
+// Stand-in for the Claude API call: keyword → services, phrase → day/time window.
+const AI_RULES = [
+  { re:/тормоз|колодк|скрип|brake|squeak|squeal/,                       svc:['b1','b5'] },
+  { re:/масл|техобслуж|плановое|фильтр|oil|filter/,                       svc:['m1','m2'] },
+  { re:/стук|подвеск|амортиз|руль|уводит|knock|suspens|shock|clunk/,    svc:['su4','d1'] },
+  { re:/чек|ошибк|горит|лампоч|check engine|warning light|error code/,  svc:['d1'] },
+  { re:/аккум|не завод|стартер|battery|won.?t start|dead/,              svc:['e2','e1'] },
+  { re:/полир|керам|детейл|царап|polish|ceramic|detail|scratch/,        svc:['dt1'] },
+  { re:/салон|химчист|interior/,                                         svc:['dt4'] },
+  { re:/свеч|троит|spark|misfire/,                                       svc:['m5'] },
+  { re:/антифриз|перегр|coolant|overheat/,                               svc:['m6'] },
+  { re:/развал|alignment/,                                               svc:['su4'] },
+  { re:/коробк|акпп|кпп|transmission|gearbox/,                           svc:['d3'] },
+];
+const MONTHS_RE = ['янв','фев','мар','апр','ма[йя]','июн','июл','авг','сен','окт','ноя','дек'];
+
+function parseWhen(t) {
+  let off = null;
+  if (/послезавтра|day after tomorrow/.test(t)) off = 2;
+  else if (/завтра|tomorrow/.test(t)) off = 1;
+  else if (/сегодня|today|tonight/.test(t)) off = 0;
+  else {
+    const WD = [[/понедельн|monday/,1],[/вторник|tuesday/,2],[/сред[уа]|wednesday/,3],[/четверг|thursday/,4],[/пятниц|friday/,5],[/суббот|saturday|выходн|weekend/,6],[/воскрес|sunday/,0]];
+    for (const [re, wd] of WD) if (re.test(t)) { off = (wd - new Date().getDay() + 7) % 7; break; }
+    if (off === null) {
+      const today = kdate(dkey(new Date()));
+      let target = null;
+      const dm = t.match(/(\d{1,2})[./](\d{1,2})/);
+      if (dm) target = new Date(today.getFullYear(), +dm[2]-1, +dm[1]);
+      else {
+        const mi = MONTHS_RE.findIndex(m => new RegExp(`(\\d{1,2})\\s*${m}`).test(t));
+        const dn = mi >= 0 ? t.match(new RegExp(`(\\d{1,2})\\s*${MONTHS_RE[mi]}`)) : t.match(/(\d{1,2})\s*(?:числа|-?го\b)/);
+        if (dn) { target = new Date(today.getFullYear(), mi >= 0 ? mi : today.getMonth(), +dn[1]); if (mi < 0 && target < today) target.setMonth(target.getMonth()+1); }
+      }
+      if (target) { if (target < today) target.setFullYear(target.getFullYear()+1); const d = Math.round((target - today)/86400000); if (d >= 0 && d < 14) off = d; }
+    }
+  }
+  let from = 0, to = 24*60;
+  if (/утр|morning/.test(t)) { to = 12*60; }
+  else if (/после обеда|обед|днём|днем|afternoon|lunch/.test(t)) { from = 12*60; to = 16*60; }
+  else if (/вечер|evening|tonight|после работы|after work/.test(t)) { from = 16*60; }
+  const tm = t.match(/(?:\sв|\sк|at|after|после)\s*(\d{1,2})(?::(\d{2}))?(?![\d./])|(\d{1,2}):(\d{2})/);
+  if (tm) { const h = +(tm[1] ?? tm[3]); if (h >= 7 && h <= 21) { from = h*60 + +(tm[2] ?? tm[4] ?? 0); to = 24*60; } }
+  return { off, from, to };
+}
+
+function findSlot(db, dur, dayKeys, from, to) {
+  for (let i = 0; i < dayKeys.length; i++) {
+    const s = freeSlots(db, dayKeys[i], dur).find(x => x.box && toMin(x.time) >= from && toMin(x.time) < to);
+    if (s) return { date: dayKeys[i], time: s.time, box: s.box, idx: i };
+  }
+  return null;
+}
+
+function aiPlan(text, db, l) {
+  const t = ' ' + text.toLowerCase();
+  let ids = [];
+  AI_RULES.forEach(r => { if (r.re.test(t)) r.svc.forEach(id => { if (!ids.includes(id)) ids.push(id); }); });
+  const unsure = !ids.length;
+  let svcs = (unsure ? ['d1'] : ids).map(id => svcById(l, db, id)).filter(s => s && !s.off);
+  if (!svcs.length) svcs = [svcById(l, db, 'd1')];
+  const dur = svcs.reduce((s, x) => s + x.dur, 0);
+  const total = svcs.reduce((s, x) => s + x.price, 0);
+  const { off, from, to } = parseWhen(t);
+  const days = nextDays(14).map(dkey).slice(off ?? 0);
+  const found = findSlot(db, dur, days, from, to) || findSlot(db, dur, days, 0, 24*60);
+  const parts = [unsure ? l.ai_unsure : l.ai_found(svcs.map(s => s.name).join(', '), fmtDur(dur, l), fmt(total))];
+  if (!found) return { text: [...parts, l.ai_none].join('\n\n') };
+  if (off !== null && found.idx > 0) parts.push(l.ai_moved);
+  parts.push(l.ai_slot(dayLabel(found.date, l), found.time, found.box));
+  return { text: parts.join('\n\n'), offer: { date: found.date, time: found.time, box: found.box, svc: svcs.map(s => s.id), dur, total } };
+}
+
+function nextSlotAfter(db, o) {
+  for (const k of nextDays(14).map(dkey).filter(k => k >= o.date)) {
+    const s = freeSlots(db, k, o.dur).find(x => x.box && (k > o.date || x.time > o.time));
+    if (s) return { date: k, time: s.time, box: s.box };
+  }
+  return null;
+}
+
+/* ═══════════════════ PWA (outside Telegram) ═══════════════════ */
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; window.dispatchEvent(new Event('garage-installable')); });
+const IS_STANDALONE = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// The installed icon opens this workshop (and the dashboard, for the owner link) - the manifest is built per workshop and role.
+function setManifest(shopName) {
+  const p = new URLSearchParams();
+  if (TENANT !== 'demo') p.set('s', TENANT);
+  if (APP_MODE === 'owner') p.set('app', 'owner');
+  if (shopName) p.set('name', shopName);
+  const el = document.getElementById('app-manifest');
+  if (el) el.href = 'manifest.json';
+  const title = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  const brand = (shopName || 'GARAGE').split('·')[0].trim();
+  const short = brand.length <= 12 ? brand : brand.split(/\s+/)[0].slice(0, 12);
+  if (title) title.content = APP_MODE === 'owner' ? 'Кабинет' : short;
+  document.title = APP_MODE === 'owner' ? `${brand} - кабинет` : brand;
+}
+setManifest('');
+if (false && 'serviceWorker' in navigator && !TG?.initData && location.protocol === 'https:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  // A new version of the app took over: reload once so the page and its code come from the same version.
+  const hadWorker = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadWorker && !reloaded) { reloaded = true; location.reload(); } });
+}
+
+/* ═══════════════════ TOAST ═══════════════════ */
+function useToast() {
+  const [s, setS] = useState({ show:false, msg:'' });
+  const t = useRef(null);
+  const fire = m => { if(t.current) clearTimeout(t.current); setS({show:true,msg:m}); t.current=setTimeout(()=>setS(p=>({...p,show:false})),2400); };
+  return [s, fire];
+}
+
+/* ═══════════════════ ICONS & LOGO ═══════════════════ */
+const ICONS = {
+  garage:   <><path d="M3.5 10.5 12 4.5l8.5 6V20h-17z"/><path d="M7.5 20v-6.5h9V20M7.5 16.75h9"/></>,
+  calendar: <><rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M8 3v4M16 3v4M3.5 10h17M12 13v4.5M9.75 15.25h4.5"/></>,
+  book:     <><path d="M5 5.5a2 2 0 0 1 2-2h12v14H7a2 2 0 0 0-2 2z"/><path d="M5 19.5a2 2 0 0 0 2 2h12v-4M9 8h6"/></>,
+  star:     <path d="m12 3.75 2.55 5.17 5.7.83-4.12 4.02.97 5.68L12 16.77l-5.1 2.68.97-5.68-4.12-4.02 5.7-.83z"/>,
+  inbox:    <><path d="M3.5 13.5 6.2 5h11.6l2.7 8.5V19a1.5 1.5 0 0 1-1.5 1.5h-14A1.5 1.5 0 0 1 3.5 19z"/><path d="M3.5 13.5h4.6l1.4 2.5h5l1.4-2.5h4.6"/></>,
+  grid:     <><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="M3.5 9h17M9.25 9v11.5M14.75 9v11.5"/></>,
+  sliders:  <><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.25"/><circle cx="9.5" cy="17" r="2.25"/></>,
+  drop:     <path d="M12 3.5s6 6.3 6 10.6a6 6 0 0 1-12 0C6 9.8 12 3.5 12 3.5z"/>,
+  disc:     <><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.75"/><path d="M12 3.5V6M20.5 12H18M12 20.5V18M3.5 12H6"/></>,
+  spring:   <path d="M7.5 3.5h9M7.5 20.5h9M7 7.5l10 2.25M7 11.75 17 14M7 16l10 2.25"/>,
+  pulse:    <path d="M3 12h4l2.25-5.5 4.5 11 2.25-5.5H21"/>,
+  bolt:     <path d="M13.25 3 5.5 13.5h6L10.75 21l7.75-10.5h-6z"/>,
+  sparkle:  <><path d="M11 3.5c.7 4.6 2.3 6.2 6.9 6.9-4.6.7-6.2 2.3-6.9 6.9-.7-4.6-2.3-6.2-6.9-6.9 4.6-.7 6.2-2.3 6.9-6.9z"/><path d="M18.25 15.5c.3 1.85.95 2.5 2.75 2.75-1.8.3-2.45.95-2.75 2.75-.3-1.8-.95-2.45-2.75-2.75 1.8-.25 2.45-.9 2.75-2.75z"/></>,
+  phone:    <path d="M6.6 3.5h2.9l1.5 4-2 1.3a10.4 10.4 0 0 0 6.2 6.2l1.3-2 4 1.5v2.9a2 2 0 0 1-2.1 2A16.5 16.5 0 0 1 4.6 5.6a2 2 0 0 1 2-2.1z"/>,
+  phoneoff: <><path d="M6.6 3.5h2.9l1.5 4-2 1.3a10.4 10.4 0 0 0 6.2 6.2l1.3-2 4 1.5v2.9a2 2 0 0 1-2.1 2A16.5 16.5 0 0 1 4.6 5.6a2 2 0 0 1 2-2.1z"/><path d="M3.5 3.5l17 17"/></>,
+  download: <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/>,
+  lock:     <><rect x="5" y="10.5" width="14" height="10" rx="2.75"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></>,
+  clock:    <><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></>,
+  car:      <><path d="M5 15.5v-3.25L7.1 7h9.8l2.1 5.25v3.25"/><rect x="3.5" y="12" width="17" height="4.5" rx="1.5"/><path d="M6.5 16.5V19M17.5 16.5V19"/></>,
+  wrench:   <path d="M15 4.2a4.6 4.6 0 0 0 4.8 6.1L10.6 19.5a2.2 2.2 0 0 1-3.1-3.1l9.2-9.2A4.6 4.6 0 0 1 15 4.2z"/>,
+  user:     <><circle cx="12" cy="8.5" r="3.75"/><path d="M4.75 20.5a7.25 7.25 0 0 1 14.5 0"/></>,
+  edit:     <><path d="M4.5 19.5h3.75L19 8.75 15.25 5 4.5 15.75z"/><path d="M13 7.25 16.75 11"/></>,
+  arrow:    <path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/>,
+  check:    <path d="m5 12.5 4.5 4.5L19 7.5"/>,
+  pin:      <><path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></>,
+  close:    <path d="M6 6l12 12M18 6 6 18"/>,
+  backspace:<><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9l-6-7z"/><path d="m12.5 9.5 5 5M17.5 9.5l-5 5"/></>,
+  logout:   <><path d="M14 4.5h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-4"/><path d="M9.5 16.5 5 12l4.5-4.5M5 12h10.5"/></>,
+  link:     <><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></>,
+};
+function Icon({ name, size = 20, stroke = 1.6 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke}
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink:0, display:'block' }}>
+      {ICONS[name]}
+    </svg>
+  );
+}
+const CAT_ICON = { maintenance:'drop', brakes:'disc', suspension:'spring', diagnostics:'pulse', electrical:'bolt', detailing:'sparkle' };
+const PERK_ICON = ['clock', 'sparkle', 'pulse', 'car'];
+
+// Mark: a garage roofline over a squared "G" whose inner bar is the half-open door.
+function LogoMark({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" stroke="currentColor"
+      strokeWidth="3.4" strokeLinecap="square" strokeLinejoin="miter" aria-label="GARAGE" style={{ display:'block', flexShrink:0 }}>
+      <path d="M8 18 24 8.5 40 18" />
+      <path d="M37 23.5H11V40h26v-8.5H25" />
+    </svg>
+  );
+}
+
+Object.assign(T.en, {
+  hero_tag:'Premium car care. Book in two taps - no calls, no waiting.',
+  open_until:t => `Open until ${t}`, closed_until:t => `Closed · opens ${t}`,
+  my_car:'MY CAR', mileage:'71,240 km',
+  admin:'ADMIN', logout:'Log out',
+  pin_title:'Owner Dashboard', pin_sub:'Enter your PIN', pin_wrong:'Wrong PIN - try again', pin_demo:'Demo PIN: 1234',
+  o_pin:'Owner PIN (4 digits)', o_client_link:'CLIENT LINK', o_client_link_sub:'Share it in your profile, bio or messages - clients never see this dashboard',
+  o_copy:'COPY', o_copied:'COPIED',
+  o_tg_title:"OWNER'S TELEGRAM", o_tg_bound:'Linked', o_tg_bind:'LINK MY TELEGRAM', o_tg_unbind:'UNLINK',
+  o_tg_id:'Telegram ID', o_tg_save:'SAVE', o_tg_id_hint:'Get your ID with the /id command in the bot',
+  o_tg_sub:'When this account opens the app in Telegram, it switches to the dashboard automatically (entry still by PIN). Everyone else gets the client app.',
+  o_hint:'Demo: open the client link (in the profile at the bottom of Services) in a second window and book - the request appears here live.',
+});
+Object.assign(T.ru, {
+  hero_tag:'Премиальный сервис для вашего автомобиля. Запись в два касания - без звонков и ожидания.',
+  open_until:t => `Открыто до ${t}`, closed_until:t => `Закрыто · откроемся в ${t}`,
+  my_car:'МОЙ АВТОМОБИЛЬ', mileage:'71 240 км',
+  admin:'АДМИН', logout:'Выйти',
+  pin_title:'Кабинет владельца', pin_sub:'Введите PIN-код', pin_wrong:'Неверный PIN - попробуйте ещё раз', pin_demo:'Демо-PIN: 1234',
+  o_pin:'PIN владельца (4 цифры)', o_client_link:'ССЫЛКА ДЛЯ КЛИЕНТОВ', o_client_link_sub:'Поставьте в профиль, шапку соцсетей или рассылку - клиенты этот кабинет не видят',
+  o_copy:'КОПИРОВАТЬ', o_copied:'СКОПИРОВАНО',
+  o_tg_title:'TELEGRAM ВЛАДЕЛЬЦА', o_tg_bound:'Привязан', o_tg_bind:'ПРИВЯЗАТЬ МОЙ TELEGRAM', o_tg_unbind:'ОТВЯЗАТЬ',
+  o_tg_id:'Telegram ID', o_tg_save:'СОХРАНИТЬ', o_tg_id_hint:'Узнать свой ID: команда /id в боте',
+  o_tg_sub:'Когда этот аккаунт открывает приложение в Telegram, оно само переключается в кабинет (вход - по PIN-коду). Все остальные попадают в клиентское приложение.',
+  o_hint:'Демо: откройте ссылку для клиентов (внизу вкладки «Услуги») во втором окне и запишитесь - заявка появится здесь вживую.',
+});
+
+/* ═══════════════════ CAR SETUP MODAL ═══════════════════ */
+Object.assign(T.en, {
+  add_car_title:'Your car', add_car_sub:'The master prepares parts and time for your visit in advance.',
+  car_empty_title:'Add your car', car_empty_sub:'Make, model and plate - so the workshop knows what to prepare before you arrive.',
+  car_add:'ADD CAR', mileage_label:'Mileage, km', mileage_ph:'71000', km:'km',
+  st_in_work:'In work', book_cta:'BOOK A SERVICE', net_error:'No connection to the server - try again',
+  car_required:'Make and model are required',
+  ai_contact:'To book, leave your name and phone:', o_done:'DONE',
+});
+Object.assign(T.ru, {
+  add_car_title:'Ваш автомобиль', add_car_sub:'Мастер заранее подготовит запчасти и время под ваш визит.',
+  car_empty_title:'Добавьте свой автомобиль', car_empty_sub:'Марка, модель и номер - чтобы сервис подготовился к визиту заранее.',
+  car_add:'ДОБАВИТЬ АВТОМОБИЛЬ', mileage_label:'Пробег, км', mileage_ph:'71000', km:'км',
+  st_in_work:'В работе', book_cta:'ЗАПИСАТЬСЯ НА СЕРВИС', net_error:'Нет связи с сервером - попробуйте ещё раз',
+  car_required:'Укажите марку и модель',
+  ai_contact:'Чтобы записаться, оставьте имя и телефон:', o_done:'ВЫПОЛНЕНО',
+});
+
+function CarSetupModal({ car, onSave, onClose }) {
+  const { l } = useLang();
+  const [form, setForm] = useState({ make:'', model:'', year:'', plate:'', vin:'', mileage:'', ...(car || {}) });
+  const set = (k, v) => setForm(p => ({ ...p, [k]:v }));
+  const ok = form.make.trim() && form.model.trim();
+  const save = () => {
+    if (!ok) return;
+    const saved = Object.fromEntries(Object.entries(form).map(([k, v]) => [k, String(v ?? '').trim()]));
+    saved.mileage = saved.mileage.replace(/\D/g, '');
+    ls_set(CAR_KEY, saved); onSave(saved);
+  };
+  const field = (k, label, ph, extra = {}) => (
+    <div>
+      <label className="field-label">{label}</label>
+      <input className={`field ${extra.mono ? 'mono' : ''}`} placeholder={ph} value={form[k]} inputMode={extra.inputMode}
+        maxLength={extra.max || 40} onChange={e => set(k, extra.upper ? e.target.value.toUpperCase() : e.target.value)} />
+    </div>
+  );
+  return (
+    <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="px" style={{ paddingTop:8, paddingBottom:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', margin:'8px 0 18px', gap:12 }}>
+            <div>
+              <h2 style={{ fontSize:20 }}>{car ? l.edit_car_title : l.add_car_title}</h2>
+              <p style={{ fontSize:12, color:'var(--gray)', marginTop:5, lineHeight:1.45 }}>{l.add_car_sub}</p>
+            </div>
+            <button className="icon-btn" onClick={onClose} aria-label="close"><Icon name="close" size={16} /></button>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+            {field('make', l.make_label, 'Toyota')}
+            {field('model', l.model_label, 'Camry')}
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+            {field('year', l.year_label, l.year_placeholder, { inputMode:'numeric', max:4 })}
+            {field('mileage', l.mileage_label, l.mileage_ph, { inputMode:'numeric', max:7 })}
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:20 }}>
+            {field('plate', l.plate_label, l.plate_placeholder, { mono:true, upper:true, max:16 })}
+            {field('vin', l.vin_label, 'JT2…', { mono:true, upper:true, max:17 })}
+          </div>
+          <button className="btn btn-primary" disabled={!ok} style={{ opacity:ok ? 1 : .3 }} onClick={save}>{l.save_car}</button>
+          {!ok && <p style={{ fontSize:11, color:'var(--gray)', textAlign:'center', marginTop:8 }}>{l.car_required}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════ MY GARAGE TAB ═══════════════════ */
+function GarageTab({ car, onEditCar, onBook }) {
+  const { l } = useLang();
+  const { db } = useDB();
+  const { shop, open, close } = db.settings;
+  const [brand, ...city] = shop.name.split('·').map(s => s.trim());
+  const now = new Date(), nowM = now.getHours()*60 + now.getMinutes();
+  const isOpen = !db.closed.includes(dkey(now)) && nowM >= toMin(open) && nowM < toMin(close);
+  const mileage = car?.mileage ? `${Number(car.mileage).toLocaleString('ru-RU')} ${l.km}` : '';
+
+  return (
+    <div className="screen">
+      <div className="px" style={{ paddingTop:6 }}>
+        <div className="hero">
+          <div className="hero-mark"><LogoMark size={52} /></div>
+          <h1 className={`hero-name ${(brand || '').length > 10 ? 'long' : ''}`}>{brand || 'GARAGE'}</h1>
+          {city.length > 0 && <p className="hero-city">{city.join(' · ')}</p>}
+          <p className="hero-tag">{shop.tagline || l.hero_tag}</p>
+          <div className="hero-meta">
+            <span className="pill"><span className={isOpen ? 'pulse' : 'pulse off'} />{isOpen ? l.open_until(close) : l.closed_until(open)}</span>
+            <span className="pill"><Icon name="pin" size={13} />{shop.address}</span>
+          </div>
+        </div>
+
+        <p className="label sec">{l.my_car}</p>
+        {car ? (
+          <div className="card" style={{ marginBottom:26 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', padding:'16px 16px 14px' }}>
+              <div>
+                <p className="car-model">{car.make} {car.model}</p>
+                <p className="car-year">{[car.year, mileage].filter(Boolean).join(' · ') || '-'}</p>
+              </div>
+              <button className="icon-btn" onClick={onEditCar} aria-label={l.edit_car_title}><Icon name="edit" size={16} /></button>
+            </div>
+            <div className="spec-row"><span className="label">{l.plate_label}</span>{car.plate ? <span className="plate">{car.plate}</span> : <span style={{ color:'var(--gray)' }}>-</span>}</div>
+            <div className="spec-row"><span className="label">{l.vin_label}</span><span className="mono" style={{ fontSize:12, color:'#c8c8cc' }}>{car.vin || '-'}</span></div>
+          </div>
+        ) : (
+          <button className="card empty-car" onClick={onEditCar}>
+            <span className="cat-ic" style={{ width:46, height:46, borderRadius:14 }}><Icon name="car" size={22} /></span>
+            <span style={{ flex:1, textAlign:'left' }}>
+              <span style={{ display:'block', fontSize:15, fontWeight:600 }}>{l.car_empty_title}</span>
+              <span style={{ display:'block', fontSize:12, color:'var(--gray)', marginTop:4, lineHeight:1.45 }}>{l.car_empty_sub}</span>
+            </span>
+            <span style={{ color:'var(--gray)' }}><Icon name="arrow" size={18} /></span>
+          </button>
+        )}
+
+        <MyBookings />
+
+        <button className="btn btn-primary" onClick={onBook}>{l.book_cta}</button>
+        <ShopCard />
+        <InstallCard />
+      </div>
+    </div>
+  );
+}
+
+
+/* ═══════════════════ SHARED PIECES ═══════════════════ */
+function StatusChip({ s }) {
+  const { l } = useLang();
+  const map = { new:['new', l.st_new], confirmed:['ok', l.st_confirmed], in_work:['ok', l.st_in_work], cancelled:['off', l.st_cancelled], done:['', l.st_done] };
+  const [cls, txt] = map[s] || ['', s];
+  return <span className={`chip ${cls}`}>{txt}</span>;
+}
+
+function DateStrip({ value, onChange, owner }) {
+  const { l } = useLang();
+  const { db } = useDB();
+  return (
+    <div className="dstrip">
+      {nextDays(14).map(d => {
+        const k = dkey(d); const closed = db.closed.includes(k);
+        return (
+          <button key={k} className={`dchip ${value===k?'sel':''} ${closed?'off':''}`}
+            onClick={() => (owner || !closed) && onChange(k)}>
+            <span className="dchip-wd">{l.wd[(d.getDay()+6)%7]}</span>
+            <span className="dchip-d">{d.getDate()}</span>
+            <span className="dchip-m">{closed ? l.closed_day : l.months[d.getMonth()]}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ScreenHead({ label, title, children }) {
+  return (
+    <div className="px" style={{ paddingTop:16, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
+      <p className="label" style={{ marginBottom:5 }}>{label}</p>
+      <h2 style={{ fontSize:21, fontWeight:700 }}>{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+/* ═══════════════════ CLIENT: MY BOOKINGS / SHOP / INSTALL ═══════════════════ */
+function MyBookings() {
+  const { l } = useLang();
+  const { db, dispatch } = useDB();
+  const [asking, setAsking] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const today = dkey(new Date());
+  const list = db.bookings.filter(b => b.key && isMine(b) && b.date >= today && b.status !== 'done').sort(cmpB);
+  const cancel = async b => { setBusy(true); await dispatch({ type:'clientCancel', id:b.id, key:b.key }); setBusy(false); setAsking(null); };
+  if (!list.length) return null;
+  return (
+    <div style={{ marginBottom:18 }}>
+      <p className="label" style={{ marginBottom:10 }}>{l.my_bookings}</p>
+      {list.slice(0, 3).map(b => (
+        <div key={b.id} className="card" style={{ padding:'12px 14px', marginBottom:4, borderColor: b.status==='confirmed' ? 'rgba(52,210,123,.35)' : undefined, opacity:b.status === 'cancelled' ? .55 : 1, animation:'scaleIn .3s both' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+            <span className="mono" style={{ fontSize:12, fontWeight:700 }}>{dayLabel(b.date, l)} · {b.start}</span>
+            <StatusChip s={liveStatus(b)} />
+          </div>
+          <p style={{ fontSize:12.5, margin:'6px 0 4px', lineHeight:1.45 }}>{svcNames(b.svc, l, db)}</p>
+          <p className="mono" style={{ fontSize:10.5, color:'var(--gray)' }}>#{b.id} · {l.box} {b.box} · {fmtDur(b.dur, l)} · {fmt(b.total)}</p>
+          {['new', 'confirmed'].includes(b.status) && (asking === b.id
+            ? <div style={{ marginTop:10 }}>
+                <p style={{ fontSize:12, color:'var(--gray)', marginBottom:8 }}>{l.cancel_sure}</p>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
+                  <button className="btn btn-sm danger" disabled={busy} onClick={() => cancel(b)}>{l.cancel_yes}</button>
+                  <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setAsking(null)}>{l.cancel_keep}</button>
+                </div>
+              </div>
+            : <button className="link-btn" style={{ fontSize:10, fontWeight:700, marginTop:8, letterSpacing:'.08em' }} onClick={() => setAsking(b.id)}>{l.cancel_booking}</button>)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ShopCard() {
+  const { l } = useLang();
+  const { db } = useDB();
+  const s = db.settings.shop;
+  return (
+    <div className="card" style={{ padding:14, marginTop:16, display:'flex', alignItems:'center', gap:12 }}>
+      <div style={{ flex:1, minWidth:0 }}>
+        <p className="label" style={{ marginBottom:4 }}>{l.shop}</p>
+        <p style={{ fontSize:14, fontWeight:600 }}>{s.name}</p>
+        <p style={{ fontSize:11.5, color:'var(--gray)', marginTop:2 }}>{s.address}</p>
+      </div>
+      <a className="btn btn-ghost btn-sm" style={{ width:'auto', textDecoration:'none' }} href={telHref(s.phone)}>{l.call}</a>
+    </div>
+  );
+}
+
+// Install GARAGE as a regular app: an icon that opens full-screen, without Telegram or the browser bar.
+// Inside Telegram the app is first opened in the phone's browser, where the system can install it.
+function InstallCard() {
+  const { l } = useLang();
+  const [can, setCan] = useState(!!deferredInstall);
+  const [tgIcon, setTgIcon] = useState('');
+  useEffect(() => {
+    const on = () => setCan(true);
+    window.addEventListener('garage-installable', on);
+    // Older Telegram versions (and the SDK outside Telegram) throw on this call instead of ignoring it.
+    try { if (TG?.initData && TG.isVersionAtLeast?.('8.0')) TG.checkHomeScreenStatus(st => setTgIcon(st || '')); } catch {}
+    return () => window.removeEventListener('garage-installable', on);
+  }, []);
+  if (IS_STANDALONE) return null;
+
+  const inTg = !!TG?.initData;
+  const webUrl = ROLE === 'owner' ? ownerLink(TENANT) : clientLink(TENANT);
+  const iosSafari = IS_IOS && /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios|yabrowser/i.test(navigator.userAgent);
+  const tgHomeOk = inTg && typeof TG.addToHomeScreen === 'function' && TG.isVersionAtLeast?.('8.0') && tgIcon !== 'added' && tgIcon !== 'unsupported';
+
+  const install = async () => { deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; setCan(false); };
+  const openInBrowser = () => { try { TG.openLink(webUrl, { try_instant_view:false }); } catch { window.open(webUrl, '_blank'); } };
+
+  let hint, action = null;
+  if (inTg) { hint = IS_IOS ? l.install_tg_ios : l.install_tg_android; action = <button className="btn btn-primary btn-sm" style={{ width:'auto' }} onClick={openInBrowser}>{l.install_tg_btn}</button>; }
+  else if (can) { hint = l.install_sub; action = <button className="btn btn-primary btn-sm" style={{ width:'auto' }} onClick={install}>{l.install_btn}</button>; }
+  else if (iosSafari) hint = l.install_ios;
+  else if (IS_IOS) hint = l.install_ios_other;
+  else hint = l.install_other;
+
+  return (
+    <div className="card install-card">
+      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+        <img src="/icons/icon-192.png" alt="" width="44" height="44" style={{ borderRadius:12, flexShrink:0 }} />
+        <div style={{ flex:1, minWidth:0 }}>
+          <p style={{ fontSize:13.5, fontWeight:600 }}>{l.install_title}</p>
+          <p style={{ fontSize:11.5, color:'var(--gray)', marginTop:3, lineHeight:1.45 }}>{hint}</p>
+        </div>
+      </div>
+      {(action || tgHomeOk) && (
+        <div style={{ display:'flex', gap:6, marginTop:12 }}>
+          {action}
+          {tgHomeOk && <button className="btn btn-ghost btn-sm" style={{ width:'auto' }} onClick={() => { try { TG.addToHomeScreen(); } catch {} }}>{l.install_tg_icon}</button>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════ BOOKING TAB ═══════════════════ */
+function BookingTab({ onMine, onOpenAI, tgUser, profile, car, canSharePhone, onRequestPhone, onBooked, onAddCar }) {
+  const { l } = useLang();
+  const { db, dispatch } = useDB();
+  const tgName = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : '';
+  const [step,  setStep]  = useState(1);
+  const [cat,   setCat]   = useState(null);
+  const [svcs,  setSvcs]  = useState([]);
+  const [date,  setDate]  = useState(null);
+  const [time,  setTime]  = useState(null);
+  const [name,  setName]  = useState(profile.name || tgName);
+  const [phone, setPhone] = useState(profile.phone);
+  const [busy,  setBusy]  = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [done,  setDone]  = useState(null);
+  const [toast, fireToast]= useToast();
+
+  useEffect(() => { if (profile.phone && !phone) setPhone(profile.phone); }, [profile.phone]);
+
+  const total = svcs.reduce((s,x) => s + x.price, 0);
+  const dur   = svcs.reduce((s,x) => s + x.dur, 0);
+  const slots = date ? freeSlots(db, date, dur) : [];
+  const slot  = slots.find(s => s.time === time);
+  const phoneOk = phone.replace(/\D/g, '').length >= 10;
+  const toggleSvc = svc => setSvcs(p => p.find(x => x.id === svc.id) ? p.filter(x => x.id !== svc.id) : [...p, svc]);
+  const reset = () => { setDone(null); setStep(1); setCat(null); setSvcs([]); setDate(null); setTime(null); };
+
+  const confirm = async () => {
+    if (busy) return;
+    setBusy(true);
+    const r = await dispatch({ type:'book', data:{ date, start:time, svc:svcs.map(s => s.id), name:name.trim(), phone:phone.trim(), car:carBrief(car), src:'app', consent } });
+    setBusy(false);
+    if (r.error) {
+      fireToast(r.error === 'slot_taken' ? l.slot_taken : l.net_error);
+      if (r.error === 'slot_taken') { setTime(null); setStep(3); }
+      return;
+    }
+    TG?.HapticFeedback?.notificationOccurred?.('success');
+    onBooked(r.booking);
+    setDone(r.booking);
+  };
+
+  if (done) return <BookingDone b={done} onMine={onMine} onNew={reset} />;
+
+  const stepNames = [l.step1_name, l.step2_name, l.step3_name, l.step4_name];
+  const anyFree = slots.some(s => s.box);
+
+  return (
+    <div className="screen">
+      <div className="px" style={{ paddingTop:16, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
+        <p className="label" style={{ marginBottom:5 }}>{l.book_title}</p>
+        <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:14 }}>
+          <h2 style={{ fontSize:21, fontWeight:700 }}>{l.step_label} {step} {l.step_of} 4</h2>
+          <span style={{ fontSize:12, color:'var(--gray)' }}>- {stepNames[step-1]}</span>
+        </div>
+        <div style={{ display:'flex', gap:5 }}>
+          {[1,2,3,4].map(s => <div key={s} className={`sdot ${s===step?'on':s<step?'done':''}`} style={{ width:s===step?undefined:8 }} />)}
+        </div>
+      </div>
+
+      <div className="px" style={{ paddingTop:18 }}>
+        {step===1 && (
+          <div style={{ animation:'slideUp .35s cubic-bezier(.16,1,.3,1) both' }}>
+            <button className="ai-card" onClick={onOpenAI}>
+              <span className="cat-ic" style={{ color:'var(--cyan)' }}><Icon name="sparkle" size={19} /></span>
+              <div style={{ flex:1 }}>
+                <p className="label" style={{ color:'var(--cyan)', marginBottom:3 }}>{l.ai_card_title}</p>
+                <p style={{ fontSize:12.5, lineHeight:1.4 }}>{l.ai_card_sub}</p>
+              </div>
+              <span style={{ color:'var(--cyan)' }}><Icon name="arrow" size={18} /></span>
+            </button>
+            <p className="label" style={{ marginBottom:12 }}>{l.select_category}</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+              {l.cats.map(c => (
+                <button key={c.id} className={`cat-btn ${cat===c.id?'on':''}`}
+                  onClick={() => { setCat(c.id); setSvcs([]); setTimeout(() => setStep(2), 180); }}>
+                  <span className="cat-ic"><Icon name={CAT_ICON[c.id]} size={19} /></span>
+                  <div style={{ textAlign:'left' }}>
+                    <p style={{ fontSize:11.5, fontWeight:700, letterSpacing:'.05em', color:cat===c.id?'var(--accent)':'var(--white)' }}>{c.label}</p>
+                    <p style={{ fontSize:10, color:'var(--gray)', marginTop:2 }}>{c.sub}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step===2 && cat && (
+          <div style={{ animation:'slideUp .35s cubic-bezier(.16,1,.3,1) both' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:12 }}>
+              <p className="label">{l.cats.find(c => c.id===cat)?.label}</p>
+              <button className="link-btn" onClick={() => { setCat(null); setSvcs([]); setStep(1); }}>{l.back}</button>
+            </div>
+            {svcList(l, db, cat).filter(s => !s.off).map(svc => {
+              const on = !!svcs.find(x => x.id === svc.id);
+              return (
+                <div key={svc.id} className={`check-item ${on?'on':''}`} onClick={() => toggleSvc(svc)}>
+                  <div className={`checkbox ${on?'on':''}`}>{on && <span style={{ fontSize:10, fontWeight:900 }}>✓</span>}</div>
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontSize:13, fontWeight:500 }}>{svc.name}</p>
+                    <p className="mono" style={{ fontSize:10, color:'var(--gray)', marginTop:3 }}>⏱ {fmtDur(svc.dur, l)}</p>
+                  </div>
+                  <span className="mono" style={{ fontSize:12.5, color:on?'var(--accent)':'var(--gray)', whiteSpace:'nowrap' }}>{fmt(svc.price)}</span>
+                </div>
+              );
+            })}
+            <div style={{ position:'sticky', bottom:0, background:'var(--bg)', borderTop:'1px solid var(--border)', paddingTop:14, marginTop:14, paddingBottom:4 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div>
+                  <p className="label" style={{ marginBottom:3 }}>{l.services_selected(svcs.length)}{dur ? ` · ${fmtDur(dur, l)}` : ''}</p>
+                  <p style={{ fontSize:24, fontWeight:700 }}>{total > 0 ? fmt(total) : <span style={{ color:'var(--gray)' }}>-</span>}</p>
+                </div>
+                <button className="btn btn-primary btn-sm" style={{ width:'auto', opacity:svcs.length?1:.3, pointerEvents:svcs.length?'auto':'none' }}
+                  onClick={() => { setTime(null); setStep(3); }}>{l.next}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step===3 && (
+          <div style={{ animation:'slideUp .35s cubic-bezier(.16,1,.3,1) both' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:14 }}>
+              <p className="label">{l.date_time} · {fmtDur(dur, l)}</p>
+              <button className="link-btn" onClick={() => setStep(2)}>{l.back}</button>
+            </div>
+            <DateStrip value={date} onChange={d => { setDate(d); setTime(null); }} />
+            {date && !anyFree && <p style={{ fontSize:12.5, color:'var(--gray)', padding:'18px 0', textAlign:'center' }}>{l.no_slots}</p>}
+            {date && anyFree && (
+              <div style={{ animation:'fadeIn .25s ease both' }}>
+                <p className="label" style={{ marginBottom:9 }}>{l.times_label} - {dayLabel(date, l)}</p>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:4, marginBottom:16 }}>
+                  {slots.map(s => (
+                    <div key={s.time} className={`tslot ${time===s.time?'sel':''} ${s.box?'':'na'}`} onClick={() => s.box && setTime(s.time)}>{s.time}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button className="btn btn-primary" disabled={!slot?.box} style={{ opacity:slot?.box?1:.3 }} onClick={() => setStep(4)}>
+              {slot?.box ? `${l.next} ${dayLabel(date, l)} · ${time}` : l.next}
+            </button>
+          </div>
+        )}
+
+        {step===4 && slot && (
+          <div style={{ animation:'slideUp .35s cubic-bezier(.16,1,.3,1) both' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:12 }}>
+              <p className="label">{l.contacts}</p>
+              <button className="link-btn" onClick={() => setStep(3)}>{l.back}</button>
+            </div>
+            <div style={{ marginBottom:8 }}>
+              <label className="field-label">{l.your_name}</label>
+              <input className="field" placeholder={l.name_ph} value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div style={{ marginBottom:8 }}>
+              <label className="field-label">{l.your_phone}</label>
+              <input className="field mono" type="tel" placeholder={l.phone_ph} value={phone} onChange={e => setPhone(e.target.value)} />
+            </div>
+            {canSharePhone && !profile.phone && <button className="btn btn-ghost btn-sm" style={{ marginBottom:8 }} onClick={() => onRequestPhone()}>{l.share_tg_phone}</button>}
+
+            <div className="card" style={{ padding:'12px 14px', margin:'8px 0', display:'flex', alignItems:'center', gap:12 }}>
+              <span className="cat-ic"><Icon name="car" size={18} /></span>
+              <span style={{ flex:1, minWidth:0, fontSize:13 }}>
+                {car ? <>{carLine(car)}{car.plate && <span className="mono" style={{ color:'var(--gray)' }}> · {car.plate}</span>}</>
+                  : <span style={{ color:'var(--gray)' }}>{l.car_empty_title}</span>}
+              </span>
+              <button className="link-btn" onClick={onAddCar}>{car ? <Icon name="edit" size={15} /> : l.car_add}</button>
+            </div>
+
+            <div className="card" style={{ padding:14, margin:'0 0 16px' }}>
+              <p className="label" style={{ marginBottom:10 }}>{l.booking_summary}</p>
+              {svcs.map(s => (
+                <div key={s.id} style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                  <span style={{ fontSize:11.5, color:'var(--gray)', flex:1, paddingRight:8 }}>{s.name}</span>
+                  <span className="mono" style={{ fontSize:11.5 }}>{fmt(s.price)}</span>
+                </div>
+              ))}
+              <div style={{ borderTop:'1px solid var(--border)', paddingTop:10, marginTop:6, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span className="mono" style={{ fontSize:11, color:'var(--gray)' }}>{dayLabel(date, l)} · {time} · {l.box} {slot.box}</span>
+                <span style={{ fontSize:20, fontWeight:700 }}>{fmt(total)}</span>
+              </div>
+            </div>
+            <ConsentRow checked={consent} onChange={setConsent} />
+            <button className="btn btn-primary" disabled={!name.trim() || !phoneOk || !consent || busy} style={{ opacity:name.trim()&&phoneOk&&consent&&!busy?1:.3, gap:10 }} onClick={confirm}>
+              {busy && <div className="spinner" style={{ borderTopColor:'#0A0A0B' }} />}{l.confirm_booking}
+            </button>
+          </div>
+        )}
+      </div>
+      <div className={`toast ${toast.show?'show':''}`}>{toast.msg}</div>
+    </div>
+  );
+}
+
+function BookingDone({ b, onMine, onNew }) {
+  const { l } = useLang();
+  const { db } = useDB();
+  const live = db.bookings.find(x => x.id === b.id) || b;
+  const rows = [
+    [l.date_lbl, dayLabel(b.date, l)], [l.time_lbl, `${b.start}-${toHM(toMin(b.start) + b.dur)}`],
+    [l.box, `#${b.box}`], [l.total_lbl, fmt(b.total)],
+  ];
+  return (
+    <div className="screen">
+      <div className="px" style={{ paddingTop:30 }}>
+        <div className="done-badge">✓</div>
+        <p className="label" style={{ marginBottom:5 }}>{l.booking_no}{b.id}</p>
+        <h2 style={{ fontSize:26, fontWeight:700, marginBottom:16 }}>{l.booking_done_title}</h2>
+        <div className="card" style={{ marginBottom:14 }}>
+          {rows.map(([k, v]) => (
+            <div className="spec-row" key={k}><span className="label">{k}</span><span className="mono" style={{ fontSize:12 }}>{v}</span></div>
+          ))}
+          <div className="spec-row"><span className="label">{l.status_lbl}</span><StatusChip s={liveStatus(live)} /></div>
+        </div>
+        <p style={{ fontSize:12.5, color:'var(--gray)', lineHeight:1.55, marginBottom:18 }}>{l.owner_notified}</p>
+        <button className="btn btn-primary" style={{ marginBottom:6 }} onClick={onMine}>{l.my_bookings_btn}</button>
+        <button className="btn btn-ghost" onClick={onNew}>{l.new_booking_btn}</button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════ AI ASSISTANT SHEET ═══════════════════ */
+function AssistantSheet({ onClose, tgUser, profile, car, canSharePhone, onRequestPhone, onBooked }) {
+  const { l } = useLang();
+  const { db, dispatch } = useDB();
+  const tgName = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : '';
+  const [msgs, setMsgs]     = useState([{ from:'ai', text:l.ai_hello }]);
+  const [input, setInput]   = useState('');
+  const [typing, setTyping] = useState(false);
+  const [name, setName]     = useState(profile.name || tgName);
+  const [phone, setPhone]   = useState(profile.phone);
+  const [busy, setBusy]     = useState(false);
+  const endRef = useRef(null);
+  const dbRef = useRef(db); dbRef.current = db;
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [msgs, typing]);
+  useEffect(() => { if (profile.phone && !phone) setPhone(profile.phone); }, [profile.phone]);
+  const contactOk = name.trim() && phone.replace(/\D/g, '').length >= 10;
+
+  const say = (text, offer) => setMsgs(m => [...m, { from:'ai', text, offer }]);
+  const send = text => {
+    if (!text.trim() || typing) return;
+    setMsgs(m => [...m, { from:'me', text }]); setInput(''); setTyping(true);
+    setTimeout(() => { const r = aiPlan(text, dbRef.current, l); setTyping(false); say(r.text, r.offer); }, 800);
+  };
+  const patchOffer = (i, patch) => setMsgs(m => m.map((x, j) => j === i ? { ...x, offer:{ ...x.offer, ...patch } } : x));
+  const other = i => {
+    const n = nextSlotAfter(dbRef.current, msgs[i].offer);
+    if (n) patchOffer(i, n); else say(l.ai_no_more);
+  };
+  const book = async i => {
+    if (!contactOk || busy) return;
+    const o = msgs[i].offer;
+    setBusy(true);
+    const r = await dispatch({ type:'book', data:{ date:o.date, start:o.time, svc:o.svc, name:name.trim(), phone:phone.trim(), car:carBrief(car), src:'ai', consent:true } });
+    setBusy(false);
+    if (r.error === 'slot_taken') { say(l.slot_taken); other(i); return; }
+    if (r.error) { say(l.net_error); return; }
+    patchOffer(i, { booked:r.booking.id });
+    say(l.ai_booked(r.booking.id));
+    TG?.HapticFeedback?.notificationOccurred?.('success');
+    onBooked?.(r.booking);
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-sheet" style={{ height:'88vh', display:'flex', flexDirection:'column', overflow:'hidden', paddingBottom:0 }}>
+        <div className="modal-handle" />
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 16px 12px', borderBottom:'1px solid var(--border)' }}>
+          <div>
+            <h2 style={{ fontSize:17, display:'flex', alignItems:'center', gap:8 }}><span style={{ color:'var(--cyan)' }}><Icon name="sparkle" size={17} /></span>{l.ai_title2}</h2>
+            <p style={{ fontSize:11.5, color:'var(--gray)', marginTop:3 }}>{l.ai_sub2}</p>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--gray)', fontSize:20, cursor:'pointer' }}>✕</button>
+        </div>
+        <div className="chat">
+          {msgs.map((m, i) => (
+            <div key={i} className={`msg ${m.from}`}>
+              {m.text}
+              {m.offer && (
+                <div className="offer">
+                  <div className="mono" style={{ fontSize:11.5, marginBottom:m.offer.booked?0:9, color:'var(--accent)' }}>
+                    {dayLabel(m.offer.date, l)} · {m.offer.time} · {l.box} {m.offer.box} · {fmt(m.offer.total)}
+                  </div>
+                  {m.offer.booked
+                    ? <span className="chip ok" style={{ marginTop:8 }}>✓ #{m.offer.booked}</span>
+                    : <>
+                        {(!profile.name || !profile.phone) && (
+                          <div style={{ display:'grid', gap:6, marginBottom:8 }}>
+                            <p style={{ fontSize:11.5, color:'var(--gray)' }}>{l.ai_contact}</p>
+                            <input className="field" style={{ padding:'10px 12px', fontSize:13 }} placeholder={l.your_name} value={name} onChange={e => setName(e.target.value)} />
+                            <input className="field mono" style={{ padding:'10px 12px', fontSize:13 }} type="tel" placeholder={l.phone_ph} value={phone} onChange={e => setPhone(e.target.value)} />
+                            {canSharePhone && !phone && <button className="btn btn-ghost btn-sm" onClick={() => onRequestPhone()}>{l.share_tg_phone}</button>}
+                          </div>
+                        )}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4 }}>
+                          <button className="btn btn-primary btn-sm" disabled={!contactOk || busy} style={{ opacity:contactOk && !busy ? 1 : .35 }} onClick={() => book(i)} title={l.consent_ai}>{l.ai_book}</button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => other(i)}>{l.ai_other}</button>
+                        </div>
+                        <p style={{ fontSize:10.5, color:'var(--gray)', marginTop:7, lineHeight:1.4 }}>{l.consent_ai}</p>
+                      </>}
+                </div>
+              )}
+            </div>
+          ))}
+          {typing && <div className="msg ai typing"><span /><span style={{ animationDelay:'.2s' }} /><span style={{ animationDelay:'.4s' }} /></div>}
+          <div ref={endRef} />
+        </div>
+        {msgs.length <= 1 && <div className="ai-chips">{l.ai_chips.map(c => <button key={c} onClick={() => send(c)}>{c}</button>)}</div>}
+        <form className="chat-input" onSubmit={e => { e.preventDefault(); send(input); }}>
+          <input className="field" value={input} onChange={e => setInput(e.target.value)} placeholder={l.ai_ph} />
+          <button className="btn btn-primary" style={{ width:52, padding:0, flexShrink:0 }} type="submit">→</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════ OWNER: REQUESTS ═══════════════════ */
+function OwnerBookingCard({ b, onStatus }) {
+  const { l } = useLang();
+  const { db } = useDB();
+  const isNew = b.status === 'new';
+  const [editing, setEditing] = useState(false);
+  return (
+    <div className="card" style={{ padding:'13px 14px', marginBottom:4, borderColor:isNew ? 'rgba(255,150,0,.45)' : undefined, animation:'scaleIn .3s both' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:7 }}>
+        <span className="mono" style={{ fontSize:12, fontWeight:700 }}>{dayLabel(b.date, l)} · {b.start}-{toHM(toMin(b.start) + b.dur)}</span>
+        <div style={{ display:'flex', gap:4 }}>
+          {b.src === 'ai' && <span className="chip ai">{l.src_ai}</span>}
+          <StatusChip s={b.status} />
+        </div>
+      </div>
+      <p style={{ fontSize:14, fontWeight:600 }}>{b.name} <span className="mono" style={{ fontSize:11, color:'var(--gray)', fontWeight:400 }}>· {b.phone}</span></p>
+      {b.car && <p style={{ fontSize:12, marginTop:5, display:'flex', alignItems:'center', gap:6 }}><Icon name="car" size={14} />{carLine(b.car)}{b.car.plate && <span className="plate" style={{ fontSize:10, padding:'3px 6px' }}>{b.car.plate}</span>}</p>}
+      <p style={{ fontSize:12, color:'var(--gray)', margin:'5px 0 8px', lineHeight:1.45 }}>{svcNames(b.svc, l, db)}</p>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <span className="mono" style={{ fontSize:10.5, color:'var(--gray)' }}>#{b.id} · {l.box} {b.box} · {fmtDur(b.dur, l)}</span>
+        <span className="mono" style={{ fontSize:14, fontWeight:700 }}>{fmt(b.total)}</span>
+      </div>
+      {!b.erased && <button className="link-btn" style={{ fontSize:10, fontWeight:700, marginTop:8, letterSpacing:'.08em' }} onClick={() => setEditing(true)}>{l.o_edit}</button>}
+      {editing && <EditBookingSheet b={b} onClose={() => setEditing(false)} />}
+      {(isNew || b.status === 'confirmed') && (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 44px', gap:4, marginTop:10 }}>
+          {isNew
+            ? <button className="btn btn-primary btn-sm" onClick={() => onStatus(b.id, 'confirmed')}>{l.o_confirm}</button>
+            : <button className="btn btn-primary btn-sm" onClick={() => onStatus(b.id, 'done')}>{l.o_done}</button>}
+          <button className="btn btn-ghost btn-sm" onClick={() => onStatus(b.id, 'cancelled')}>{l.o_cancel}</button>
+          <a className="btn btn-ghost btn-sm" style={{ textDecoration:'none', padding:0 }} href={telHref(b.phone)} aria-label={l.call}><Icon name="phone" size={16} /></a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The owner corrects the client's details or moves the visit to another free time.
+function EditBookingSheet({ b, onClose }) {
+  const { l } = useLang();
+  const { db, dispatch } = useDB();
+  const [f, setF] = useState({ name:b.name || '', phone:b.phone || '', make:b.car?.make || '', model:b.car?.model || '', plate:b.car?.plate || '', date:b.date, start:b.start });
+  const [busy, setBusy] = useState(false);
+  const set = (k, v) => setF(p => ({ ...p, [k]:v }));
+  const movable = ['new', 'confirmed'].includes(b.status);
+  const others = { ...db, bookings:db.bookings.filter(x => x.id !== b.id) };
+  const times = movable ? window.GarageCore.freeSlots(others, f.date, b.dur, new Date()).filter(s => s.box).map(s => s.time) : [];
+  if (movable && f.date === b.date && !times.includes(b.start)) times.unshift(b.start);
+  const ok = f.name.trim().length >= 2 && f.phone.replace(/\D/g, '').length >= 10 && (!movable || times.includes(f.start));
+  const moved = f.date !== b.date || f.start !== b.start;
+  const save = async () => {
+    if (!ok || busy) return;
+    setBusy(true);
+    const car = f.make.trim() ? { make:f.make.trim(), model:f.model.trim(), year:b.car?.year || '', plate:f.plate.trim().toUpperCase() } : null;
+    const r = await dispatch({ type:'edit', id:b.id, patch:{ name:f.name.trim(), phone:f.phone.trim(), car, date:f.date, start:f.start } });
+    setBusy(false);
+    if (!r.error) onClose();
+  };
+  const field = (k, label, extra = {}) => (
+    <div>
+      <label className="field-label">{label}</label>
+      <input className={`field ${extra.mono ? 'mono' : ''}`} value={f[k]} type={extra.type} maxLength={extra.max || 60}
+        onChange={e => set(k, extra.upper ? e.target.value.toUpperCase() : e.target.value)} />
+    </div>
+  );
+  // Rendered into <body>: the booking card is animated, and a transformed parent would trap a fixed overlay.
+  return ReactDOM.createPortal(
+    <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="px" style={{ paddingTop:8, paddingBottom:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'8px 0 16px' }}>
+            <h2 style={{ fontSize:20 }}>{l.o_edit_title(b.id)}</h2>
+            <button className="icon-btn" onClick={onClose} aria-label="close"><Icon name="close" size={16} /></button>
+          </div>
+          <p className="label" style={{ marginBottom:8 }}>{l.o_client}</p>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
+            {field('name', l.my_name)}
+            {field('phone', l.my_phone, { type:'tel', mono:true, max:30 })}
+          </div>
+          <p className="label" style={{ marginBottom:8 }}>{l.o_car}</p>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:16 }}>
+            {field('make', l.make_label, { max:40 })}
+            {field('model', l.model_label, { max:40 })}
+            {field('plate', l.plate_label, { mono:true, upper:true, max:16 })}
+          </div>
+          {movable && <>
+            <p className="label" style={{ marginBottom:8 }}>{l.o_when}</p>
+            <DateStrip value={f.date} onChange={d => setF(p => ({ ...p, date:d, start:'' }))} owner />
+            {times.length
+              ? <div className="slots" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:4, marginBottom:8 }}>
+                  {times.map(t => <button key={t} className={`btn btn-sm ${f.start === t ? 'btn-primary' : 'btn-ghost'}`} onClick={() => set('start', t)}>{t}</button>)}
+                </div>
+              : <p style={{ fontSize:12, color:'var(--gray)', margin:'4px 0 12px' }}>{l.o_no_slots}</p>}
+            {moved && <p style={{ fontSize:11, color:'var(--gray)', marginBottom:12 }}>{l.o_edit_moved}</p>}
+          </>}
+          <button className="btn btn-primary" disabled={!ok || busy} style={{ opacity:ok && !busy ? 1 : .35, marginTop:8 }} onClick={save}>{l.o_edit_save}</button>
+        </div>
+      </div>
+    </div>
+,
+    document.body
+  );
+}
+
+function OwnerBookings() {
+  const { l } = useLang();
+  const { db, dispatch } = useDB();
+  const today = dkey(new Date()), weekEnd = dkey(addDays(new Date(), 7));
+  const real = db.bookings.filter(b => b.status !== 'block');
+  const nw = real.filter(b => b.status === 'new').sort((a, b) => b.created - a.created);
+  const up = real.filter(b => b.status === 'confirmed' && b.date >= today).sort(cmpB);
+  const todayN = real.filter(b => b.date === today && b.status !== 'cancelled').length;
+  const rev = real.filter(b => b.status !== 'cancelled' && b.date >= today && b.date <= weekEnd).reduce((s, b) => s + b.total, 0);
+  const setStatus = (id, status) => dispatch({ type:'status', id, status });
+  return (
+    <div className="screen">
+      <ScreenHead label={l.owner} title={l.o_title}>
+        <div style={{ display:'flex', marginTop:14 }}>
+          {[[l.o_new, nw.length, nw.length ? '#FF9F0A' : undefined], [l.o_today, todayN], [l.o_week, rev >= 10000 ? `${Math.round(rev/1000)}K ₽` : fmt(rev)]].map(([k, v, c], i) => (
+            <div key={k} style={{ flex:1, borderRight:i<2?'1px solid var(--border)':'none', paddingLeft:i?12:0, paddingRight:12 }}>
+              <p className="label" style={{ marginBottom:4 }}>{k}</p>
+              <p className="mono" style={{ fontSize:17, fontWeight:700, color:c }}>{v}</p>
+            </div>
+          ))}
+        </div>
+      </ScreenHead>
+      <div className="px" style={{ paddingTop:16 }}>
+        <div className="card" style={{ padding:'13px 14px', marginBottom:8, display:'flex', gap:12, alignItems:'center' }}>
+          <span className="cat-ic"><Icon name="phoneoff" size={18} /></span>
+          <div>
+            <p style={{ fontSize:14, fontWeight:600 }}>{l.o_problem}</p>
+            <p style={{ fontSize:11.5, color:'var(--gray)', marginTop:3, lineHeight:1.45 }}>{l.o_problem_sub}</p>
+          </div>
+        </div>
+        {IS_DEMO ? <p style={{ fontSize:10.5, color:'var(--gray)', lineHeight:1.5, marginBottom:18 }}>{l.o_hint}</p> : <div style={{ height:10 }} />}
+
+        <p className="label" style={{ marginBottom:9 }}>{l.o_new_list}</p>
+        {nw.length ? nw.map(b => <OwnerBookingCard key={b.id} b={b} onStatus={setStatus} />)
+          : <p style={{ fontSize:12.5, color:'var(--gray)', padding:'14px 0' }}>{l.o_empty}</p>}
+
+        <p className="label" style={{ margin:'18px 0 9px' }}>{l.o_upcoming}</p>
+        {up.map(b => <OwnerBookingCard key={b.id} b={b} onStatus={setStatus} />)}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════ OWNER: SCHEDULE ═══════════════════ */
+function OwnerSchedule() {
+  const { l } = useLang();
+  const { db, dispatch } = useDB();
+  const [date, setDate] = useState(dkey(new Date()));
+  const { boxes, open, close } = db.settings;
+  const o = toMin(open), c = toMin(close), PX = 0.9, HEAD = 28;
+  const closed = db.closed.includes(date);
+  const dayB = db.bookings.filter(b => b.date === date && b.status !== 'cancelled');
+  const hours = []; for (let h = Math.ceil(o/60); h*60 < c; h++) hours.push(h);
+  const hourOpts = Array.from({ length:17 }, (_, i) => toHM((6 + i) * 60));
+  const height = (c - o) * PX + HEAD;
+
+  const toggleDay = () => dispatch({ type:'toggleDay', date });
+  const toggleBlock = box => dispatch({ type:'toggleBlock', date, box });
+  const setS = patch => dispatch({ type:'settings', patch });
+
+  return (
+    <div className="screen">
+      <ScreenHead label={l.owner} title={l.o_schedule} />
+      <div className="px" style={{ paddingTop:16 }}>
+        <DateStrip value={date} onChange={setDate} owner />
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+          <p className="label">{dayLabel(date, l)}</p>
+          <button className={`btn btn-sm ${closed ? 'btn-primary' : 'btn-ghost'}`} style={{ width:'auto' }} onClick={toggleDay}>
+            {closed ? l.o_open_day : l.o_close_day}
+          </button>
+        </div>
+
+        {closed ? (
+          <div className="card" style={{ padding:'34px 14px', textAlign:'center', color:'var(--gray)', marginBottom:16 }}>{l.o_day_closed}</div>
+        ) : (
+          <div className="tl" style={{ marginBottom:16 }}>
+            <div className="tl-hours" style={{ height }}>
+              {hours.map(h => <span key={h} className="tl-hour" style={{ top:HEAD + (h*60 - o) * PX }}>{pad(h)}:00</span>)}
+            </div>
+            {Array.from({ length:boxes }, (_, i) => i + 1).map(box => {
+              const blocked = dayB.some(b => b.box === box && b.status === 'block');
+              return (
+                <div key={box} className="tl-col" style={{ height }}>
+                  <div className="tl-head">
+                    <span>{l.box.toUpperCase()} {box}</span>
+                    <button className="link-btn" style={{ fontSize:9, fontWeight:700, color:blocked?'var(--accent)':undefined }} onClick={() => toggleBlock(box)}>
+                      {blocked ? l.o_unblock : l.o_block}
+                    </button>
+                  </div>
+                  {hours.map(h => <div key={h} className="tl-line" style={{ top:HEAD + (h*60 - o) * PX }} />)}
+                  {dayB.filter(b => b.box === box).map(b => {
+                    const s = Math.max(toMin(b.start), o), e = Math.min(toMin(b.start) + b.dur, c);
+                    if (e <= s) return null;
+                    const cls = b.status === 'block' ? 'block' : b.status === 'new' ? 'new' : '';
+                    return (
+                      <div key={b.id} className={`tl-block ${cls}`} style={{ top:HEAD + (s - o) * PX, height:Math.max((e - s) * PX, 18) }}>
+                        {b.status === 'block'
+                          ? <span className="label" style={{ fontSize:8.5 }}>{l.o_blocked}</span>
+                          : <><b className="mono">{b.start}</b> {b.name}<br /><span style={{ color:'var(--gray)' }}>{svcNames(b.svc, l, db)}</span></>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="label" style={{ marginBottom:9 }}>{l.o_settings}</p>
+        <div className="card">
+          <div className="spec-row">
+            <span style={{ fontSize:13 }}>{l.o_boxes}</span>
+            <div className="stepper">
+              <button onClick={() => setS({ boxes:Math.max(1, boxes - 1) })}>−</button>
+              <span>{boxes}</span>
+              <button onClick={() => setS({ boxes:Math.min(4, boxes + 1) })}>+</button>
+            </div>
+          </div>
+          <div className="spec-row">
+            <span style={{ fontSize:13 }}>{l.o_hours}</span>
+            <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+              <select className="mini-field" style={{ width:72 }} value={open} onChange={e => setS({ open:e.target.value })}>
+                {hourOpts.filter(h => h < close).map(h => <option key={h}>{h}</option>)}
+              </select>
+              <span style={{ color:'var(--gray)' }}>-</span>
+              <select className="mini-field" style={{ width:72 }} value={close} onChange={e => setS({ close:e.target.value })}>
+                {hourOpts.filter(h => h > open).map(h => <option key={h}>{h}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Text field that saves on blur / Enter instead of on every keystroke (each save is a server round trip).
+function CommitInput({ value, onCommit, normalize = v => v, valid = () => true, className = 'field', ...rest }) {
+  const [v, setV] = useState(String(value ?? ''));
+  const focused = useRef(false);
+  useEffect(() => { if (!focused.current) setV(String(value ?? '')); }, [value]);
+  const commit = () => {
+    focused.current = false;
+    const nv = normalize(v);
+    if (!valid(nv)) { setV(String(value ?? '')); return; }
+    if (nv !== String(value ?? '')) onCommit(nv);
+  };
+  return (
+    <input className={className} value={v} {...rest}
+      onFocus={() => { focused.current = true; }} onChange={e => setV(e.target.value)} onBlur={commit}
+      onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
+  );
+}
+
+/* ═══════════════════ TEXTS FOR ACCOUNTS, REGISTRATION, CONSENT ═══════════════════ */
+Object.assign(T.en, {
+  o_access:'OWNER ACCESS', o_access_sub:'The dashboard opens for this Telegram account automatically. From a browser the owner signs in with this phone and the PIN.',
+  o_username:'Owner Telegram', o_owner_phone:'Owner phone', o_tagline:'Short description for clients', o_cashback:'Cashback for clients, %',
+  o_tg_link:'TELEGRAM LINK', o_bot_hint:'Opens the app right inside Telegram',
+  err_boxes_in_use:'There are bookings in that box - move or cancel them first', err_hours:'Opening time must be earlier than closing time',
+  err_username:'Telegram nick: 5-32 Latin letters, digits or _', err_phone:'Enter a phone number with at least 10 digits',
+  err_name:'Enter the workshop name', err_pin:'PIN must be 4 digits', err_auth:'Session expired - sign in again', err_generic:'Could not save - try again',
+  login_phone:'Owner phone', login_by_tg:n => `Signed in as @${n} - enter the PIN`, login_need_phone:'Enter the owner phone first',
+  login_wrong:'Wrong phone or PIN', login_new:'Register your workshop',
+  err_locked:'Too many attempts. Sign-in is locked for 15 minutes', err_rate:'Too many registrations from this network - try again in an hour',
+  o_new_pin:'New PIN (twice)', o_pin_changed:'changed', o_save:'SAVE',
+  o_security_note:'The PIN is stored encrypted and is never shown. Changing the PIN or the phone signs out the dashboard on all other devices.',
+  forget_title:'MY DATA', forget_body:'Delete your name, phone and car from this workshop and from this device. Upcoming visits will be cancelled.',
+  forget_confirm:'Delete your data? Upcoming visits will be cancelled. This cannot be undone.', forget_btn:'DELETE MY DATA', forget_yes:'DELETE', forget_no:'CANCEL',
+  reg_title:'Connect your workshop', reg_sub:'Ten minutes, no code. Clients book themselves 24/7 - you confirm in one tap.',
+  reg_step_shop:'Workshop', reg_step_owner:'Owner account', reg_step_hours:'Schedule',
+  reg_name:'Workshop name', reg_name_ph:'Garage on Lenina', reg_addr:'Address', reg_addr_ph:'Lenina St, 10', reg_shop_phone:'Workshop phone', reg_tagline_ph:'Brakes, suspension, diagnostics. Warranty on all work.',
+  reg_username:'Your Telegram nick', reg_username_hint:'The dashboard will recognise you by it inside Telegram', reg_owner_phone:'Your phone', reg_owner_phone_hint:'For signing in from a browser',
+  reg_pin:'PIN (4 digits)', reg_pin2:'Repeat PIN', reg_pin_mismatch:'PINs do not match',
+  reg_create:'CREATE WORKSHOP', reg_creating:'Creating…', reg_done:'Workshop created', reg_done_sub:'Send the client link to your customers and put it in your profiles. Keep the owner link for yourself.',
+  reg_client_link:'Client link', reg_owner_link:'Owner dashboard', reg_tg_link:'Client link for Telegram', reg_open_owner:'OPEN DASHBOARD',
+  reg_offline:'Registration needs the server - open the deployed version of the app',
+  nf_title:'Workshop not found', nf_sub:'The link may be outdated. Ask the workshop for a new one.', nf_demo:'OPEN DEMO',
+  consent_pre:'I agree to the ', consent_link:'processing of my personal data', consent_post:' for booking',
+  consent_ai:'By booking you agree to the processing of personal data',
+  privacy_title:'Personal data', privacy_body:sh => `The workshop «${sh}» receives your name, phone and car details to book you in, confirm the visit and contact you about it. Data is kept while you are a client of the workshop and is not passed to third parties except to send notifications via Telegram. To delete your data, use «Delete my data» in the Loyalty tab or contact the workshop.`,
+  ai_title2:'Booking assistant', ai_sub2:'Describe the problem and a convenient time', src_ai:'ASSISTANT',
+  ai_card_title:'BOOKING ASSISTANT', cashback_rule:p => `${p}% of every completed visit returns as points. 1 point = 1 ₽ off your next visit.`,
+  phone_from_tg:'from Telegram',
+});
+Object.assign(T.ru, {
+  o_access:'ДОСТУП ВЛАДЕЛЬЦА', o_access_sub:'Для этого аккаунта Telegram кабинет откроется автоматически. Из браузера владелец входит по этому телефону и PIN-коду.',
+  o_username:'Telegram владельца', o_owner_phone:'Телефон владельца', o_tagline:'Короткое описание для клиентов', o_cashback:'Кешбэк клиентам, %',
+  o_tg_link:'ССЫЛКА ДЛЯ TELEGRAM', o_bot_hint:'Открывает приложение прямо в Telegram',
+  err_boxes_in_use:'В этом боксе есть записи - сначала перенесите или отмените их', err_hours:'Время открытия должно быть раньше закрытия',
+  err_username:'Ник Telegram: 5-32 латинские буквы, цифры или _', err_phone:'Введите телефон - минимум 10 цифр',
+  err_name:'Укажите название сервиса', err_pin:'PIN - 4 цифры', err_auth:'Сессия истекла - войдите снова', err_generic:'Не удалось сохранить - попробуйте ещё раз',
+  login_phone:'Телефон владельца', login_by_tg:n => `Вы вошли как @${n} - введите PIN`, login_need_phone:'Сначала введите телефон владельца',
+  login_wrong:'Неверный телефон или PIN', login_new:'Подключить свой автосервис',
+  err_locked:'Слишком много попыток. Вход заблокирован на 15 минут', err_rate:'Слишком много регистраций из этой сети - попробуйте через час',
+  o_new_pin:'Новый PIN (дважды)', o_pin_changed:'изменён', o_save:'СОХРАНИТЬ',
+  o_security_note:'PIN хранится в зашифрованном виде и нигде не показывается. Смена PIN или телефона завершает вход в кабинет на всех других устройствах.',
+  forget_title:'МОИ ДАННЫЕ', forget_body:'Удалить ваше имя, телефон и автомобиль из этого автосервиса и с этого устройства. Предстоящие визиты будут отменены.',
+  forget_confirm:'Удалить ваши данные? Предстоящие визиты будут отменены. Это действие нельзя отменить.', forget_btn:'УДАЛИТЬ МОИ ДАННЫЕ', forget_yes:'УДАЛИТЬ', forget_no:'ОТМЕНА',
+  reg_title:'Подключите автосервис', reg_sub:'Десять минут, без кода. Клиенты записываются сами 24/7 - вы подтверждаете в одно касание.',
+  reg_step_shop:'Сервис', reg_step_owner:'Аккаунт владельца', reg_step_hours:'Расписание',
+  reg_name:'Название сервиса', reg_name_ph:'Гараж на Ленина', reg_addr:'Адрес', reg_addr_ph:'ул. Ленина, 10', reg_shop_phone:'Телефон сервиса', reg_tagline_ph:'Тормоза, подвеска, диагностика. Гарантия на все работы.',
+  reg_username:'Ваш ник в Telegram', reg_username_hint:'По нему кабинет узнает вас внутри Telegram', reg_owner_phone:'Ваш телефон', reg_owner_phone_hint:'Для входа из браузера',
+  reg_pin:'PIN-код (4 цифры)', reg_pin2:'Повторите PIN', reg_pin_mismatch:'PIN-коды не совпадают',
+  reg_create:'СОЗДАТЬ АВТОСЕРВИС', reg_creating:'Создаём…', reg_done:'Автосервис создан', reg_done_sub:'Ссылку для клиентов отправьте клиентам и поставьте в профили. Ссылку на кабинет оставьте себе.',
+  reg_client_link:'Ссылка для клиентов', reg_owner_link:'Кабинет владельца', reg_tg_link:'Ссылка для клиентов в Telegram', reg_open_owner:'ОТКРЫТЬ КАБИНЕТ',
+  reg_offline:'Для регистрации нужен сервер - откройте опубликованную версию приложения',
+  nf_title:'Автосервис не найден', nf_sub:'Возможно, ссылка устарела. Попросите у сервиса новую.', nf_demo:'ОТКРЫТЬ ДЕМО',
+  consent_pre:'Я согласен на ', consent_link:'обработку персональных данных', consent_post:' для записи',
+  consent_ai:'Записываясь, вы соглашаетесь на обработку персональных данных',
+  privacy_title:'Персональные данные', privacy_body:sh => `Автосервис «${sh}» получает ваше имя, телефон и данные автомобиля, чтобы записать вас, подтвердить визит и связаться по нему. Данные хранятся, пока вы являетесь клиентом сервиса, и не передаются третьим лицам, кроме отправки уведомлений через Telegram. Чтобы удалить свои данные, нажмите «Удалить мои данные» во вкладке лояльности или обратитесь в сервис.`,
+  ai_title2:'Помощник записи', ai_sub2:'Опишите проблему и удобное время', src_ai:'ПОМОЩНИК',
+  ai_card_title:'ПОМОЩНИК ЗАПИСИ', cashback_rule:p => `${p}% от каждого завершённого визита возвращается баллами. 1 балл = 1 ₽ скидки на следующий визит.`,
+  phone_from_tg:'из Telegram',
+});
+
+/* ═══════════════════ TEXTS FOR EDITING, CANCELLING, NOTIFICATIONS ═══════════════════ */
+Object.assign(T.en, {
+  err_slot_taken:'That time is already taken - pick another', err_invalid:'Check the details', err_network:'No connection to the server',
+  err_showcase:'This field is fixed in the demo dashboard', err_not_found:'Booking not found - refresh the page',
+  cancel_booking:'CANCEL BOOKING', cancel_sure:'Cancel this booking? The workshop will be notified.', cancel_yes:'YES, CANCEL', cancel_keep:'KEEP',
+  booking_cancelled:'Booking cancelled',
+  my_data:'BOOKING DETAILS', my_name:'Name', my_phone:'Phone', my_data_sub:'Filled into new bookings. Kept only on this device.',
+  o_edit:'EDIT', o_edit_title:n => `Booking #${n}`, o_client:'CLIENT', o_when:'DATE AND TIME', o_car:'CAR', o_no_slots:'No free time on this day',
+  o_edit_save:'SAVE CHANGES', o_edit_moved:'The client gets a Telegram message about the new time.', saved_ok:'Saved',
+  o_notify:'NOTIFICATIONS', o_notify_on:n => `New bookings arrive in Telegram${n ? `: ${n}` : ''}.`,
+  o_notify_off:'Not connected yet. Open this dashboard once from the Telegram bot and new bookings will arrive as messages.',
+  o_notify_showcase:'In the demo the alert comes to you: open the client app in the Telegram bot and book.',
+  o_notify_test:'SEND TEST', push_ok:'Sent - check Telegram', push_no_chat:'Open the dashboard from the Telegram bot first',
+  push_blocked:'The bot cannot write to you: press Start in the bot', push_no_token:'The bot is not connected to the server', push_fail:'Could not send - try again',
+  pin_showcase:'Demo dashboard · PIN 0000', pin_showcase_btn:'ENTER DEMO',
+});
+Object.assign(T.ru, {
+  err_slot_taken:'Это время уже занято - выберите другое', err_invalid:'Проверьте данные', err_network:'Нет связи с сервером',
+  err_showcase:'В демо-кабинете это поле не меняется', err_not_found:'Запись не найдена - обновите страницу',
+  cancel_booking:'ОТМЕНИТЬ ЗАПИСЬ', cancel_sure:'Отменить запись? Сервис получит уведомление.', cancel_yes:'ДА, ОТМЕНИТЬ', cancel_keep:'НЕТ',
+  booking_cancelled:'Запись отменена',
+  my_data:'ДАННЫЕ ДЛЯ ЗАПИСИ', my_name:'Имя', my_phone:'Телефон', my_data_sub:'Подставляются в новые записи. Хранятся только на этом устройстве.',
+  o_edit:'ИЗМЕНИТЬ', o_edit_title:n => `Запись №${n}`, o_client:'КЛИЕНТ', o_when:'ДАТА И ВРЕМЯ', o_car:'АВТОМОБИЛЬ', o_no_slots:'В этот день нет свободного времени',
+  o_edit_save:'СОХРАНИТЬ', o_edit_moved:'Клиент получит сообщение в Telegram о новом времени.', saved_ok:'Сохранено',
+  o_notify:'УВЕДОМЛЕНИЯ', o_notify_on:n => `Новые записи приходят в Telegram${n ? `: ${n}` : ''}.`,
+  o_notify_off:'Пока не подключены. Откройте этот кабинет один раз из Telegram-бота - и новые записи будут приходить вам сообщением.',
+  o_notify_showcase:'В демо уведомление придёт вам: откройте приложение клиента в Telegram-боте и запишитесь.',
+  o_notify_test:'ПРОВЕРИТЬ', push_ok:'Отправлено - проверьте Telegram', push_no_chat:'Сначала откройте кабинет из Telegram-бота',
+  push_blocked:'Бот не может вам написать: нажмите «Старт» в боте', push_no_token:'Бот не подключён к серверу', push_fail:'Не удалось отправить - попробуйте ещё раз',
+  pin_showcase:'Демо-кабинет · PIN 0000', pin_showcase_btn:'ВОЙТИ В ДЕМО',
+});
+
+const errText = (l, code) => l[`err_${code}`] || l.err_generic;
+const BOT_USERNAME = 'garagedemobotbot';
+const appBase = () => location.origin + location.pathname;
+const clientLink = slug => (slug === 'demo' ? appBase() : `${appBase()}?s=${slug}`);
+const ownerLink = slug => (slug === 'demo' ? `${appBase()}?app=owner` : `${appBase()}?s=${slug}&app=owner`);
+// Opens the app right inside Telegram (needs the bot's Main Mini App set in @BotFather).
+const tgLink = slug => `https://t.me/${BOT_USERNAME}?startapp=s_${slug}`;
+
+function CopyRow({ label, value, l }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => { try { await navigator.clipboard.writeText(value); } catch {} setCopied(true); setTimeout(() => setCopied(false), 1800); };
+  return (
+    <div style={{ marginBottom:10 }}>
+      <p className="field-label">{label}</p>
+      <div className="ref-box">
+        <span className="mono" style={{ flex:1, minWidth:0, fontSize:11.5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value.replace(/^https?:\/\//, '')}</span>
+        <button className="btn btn-ghost btn-sm" style={{ width:'auto', flexShrink:0 }} onClick={copy}>{copied ? l.o_copied : l.o_copy}</button>
+      </div>
+    </div>
+  );
+}
+
+// The PIN is never shown or sent back by the server; the owner can only set a new one.
+function NewPinField({ onSave, saved }) {
+  const { l } = useLang();
+  const [a, setA] = useState(''), [b, setB] = useState(''), [err, setErr] = useState(''), [busy, setBusy] = useState(false);
+  const ok = /^\d{4}$/.test(a) && a === b;
+  const submit = async () => {
+    if (!/^\d{4}$/.test(a)) { setErr(l.err_pin); return; }
+    if (a !== b) { setErr(l.reg_pin_mismatch); return; }
+    setBusy(true);
+    const r = await onSave(a);
+    setBusy(false);
+    if (!r.error) { setA(''); setB(''); setErr(''); }
+  };
+  return (
+    <div>
+      <label className="field-label">{l.o_new_pin}{saved && <span style={{ color:'var(--ok)', marginLeft:8 }}>✓ {l.o_pin_changed}</span>}</label>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:6 }}>
+        <input className="field mono" type="password" inputMode="numeric" autoComplete="new-password" maxLength={4} placeholder="••••" aria-label={l.o_new_pin}
+          value={a} onChange={e => { setA(e.target.value.replace(/\D/g, '')); setErr(''); }} />
+        <input className="field mono" type="password" inputMode="numeric" autoComplete="new-password" maxLength={4} placeholder="••••" aria-label={l.reg_pin2}
+          value={b} onChange={e => { setB(e.target.value.replace(/\D/g, '')); setErr(''); }} />
+        <button className="btn btn-ghost btn-sm" style={{ width:'auto' }} disabled={!ok || busy} onClick={submit}>{l.o_save}</button>
+      </div>
+      {err && <p style={{ fontSize:11.5, color:'#FF6B6B', marginTop:6 }}>{err}</p>}
+    </div>
+  );
+}
+
+// Where new-booking alerts go, and a test message to make sure they arrive.
+function NotifyCard() {
+  const { l } = useLang();
+  const { db } = useDB();
+  const [state, setState] = useState({ busy:false, msg:'', ok:false });
+  const tgo = db.settings.ownerTg;
+  const who = tgo ? [tgo.name, tgo.username && `@${tgo.username}`].filter(Boolean).join(' · ') : '';
+  const test = async () => {
+    setState({ busy:true, msg:'', ok:false });
+    try {
+      const r = await apiCall({ action:'testPush', session:OWNER_SESSION });
+      setState({ busy:false, ok:r.ok, msg:r.ok ? l.push_ok : l[`push_${r.why}`] || l.push_fail });
+    } catch { setState({ busy:false, ok:false, msg:l.push_fail }); }
+  };
+  return (
+    <>
+      <p className="label" style={{ margin:'20px 0 9px' }}>{l.o_notify}</p>
+      <div className="card" style={{ padding:14 }}>
+        <p style={{ fontSize:12.5, lineHeight:1.5, display:'flex', gap:8 }}>
+          <span style={{ color:IS_SHOWCASE || tgo ? 'var(--ok)' : '#FF9F0A' }}>●</span>
+          <span>{IS_SHOWCASE ? l.o_notify_showcase : tgo ? l.o_notify_on(who) : l.o_notify_off}</span>
+        </p>
+        {REMOTE && <button className="btn btn-ghost btn-sm" style={{ marginTop:12 }} disabled={state.busy} onClick={test}>{state.busy ? '…' : l.o_notify_test}</button>}
+        {state.msg && <p style={{ fontSize:12, marginTop:8, color:state.ok ? 'var(--ok)' : '#FF6B6B' }}>{state.msg}</p>}
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════ OWNER: SERVICES & PROFILE ═══════════════════ */
+function OwnerServices({ onReset, onAuthChanged }) {
+  const { l } = useLang();
+  const { db, dispatch } = useDB();
+  const [open, setOpen] = useState('maintenance');
+  const [saved, setSaved] = useState('');
+  const DURS = [15, 20, 30, 45, 60, 90, 120, 150, 180, 240, 300, 480];
+  const S = db.settings, shop = S.shop || {};
+  const ok = key => { setSaved(key); setTimeout(() => setSaved(''), 1800); };
+  const save = async (patch, key) => { const r = await dispatch({ type:'settings', patch }); if (!r.error) ok(key); return r; };
+  const setOv = (id, patch) => dispatch({ type:'override', id, patch });
+  const mark = key => saved === key && <span style={{ color:'var(--ok)', marginLeft:8 }}>✓</span>;
+
+  return (
+    <div className="screen">
+      <ScreenHead label={l.owner} title={l.o_services_title}>
+        <p style={{ fontSize:12, color:'var(--gray)', marginTop:5 }}>{l.o_services_sub}</p>
+      </ScreenHead>
+      <div className="px" style={{ paddingTop:16 }}>
+        {l.cats.map(c => (
+          <div key={c.id} className="card" style={{ marginBottom:4 }}>
+            <button className="acc-head" onClick={() => setOpen(open === c.id ? null : c.id)}>
+              <span style={{ display:'flex', alignItems:'center', gap:10 }}><Icon name={CAT_ICON[c.id]} size={17} />{c.label}</span><span style={{ color:'var(--gray)' }}>{open === c.id ? '−' : '+'}</span>
+            </button>
+            {open === c.id && (
+              <div style={{ padding:'0 14px 2px' }}>
+                {svcList(l, db, c.id).map(s => (
+                  <div key={s.id} className="svc-row">
+                    <p style={{ fontSize:12.5, fontWeight:500, opacity:s.off ? .4 : 1 }}>{s.name}</p>
+                    <button className={`toggle ${s.off ? '' : 'on'}`} onClick={() => setOv(s.id, { off:!s.off })} aria-label={s.name} />
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, gridColumn:'1 / -1', opacity:s.off ? .4 : 1 }}>
+                      <label><span className="field-label">{l.o_price}</span>
+                        <CommitInput className="mini-field" inputMode="numeric" value={s.price}
+                          normalize={v => String(Math.max(0, parseInt(String(v).replace(/\D/g, ''), 10) || 0))}
+                          onCommit={v => setOv(s.id, { price:Number(v) })} />
+                      </label>
+                      <label><span className="field-label">{l.o_dur}</span>
+                        <select className="mini-field" value={s.dur} onChange={e => setOv(s.id, { dur:+e.target.value })}>
+                          {[...new Set([...DURS, s.dur])].sort((a, b) => a - b).map(m => <option key={m} value={m}>{fmtDur(m, l)}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
+        <p className="label" style={{ margin:'20px 0 9px' }}>{l.o_profile}</p>
+        <div className="card" style={{ padding:14 }}>
+          {[['name', l.o_shop_name], ['address', l.o_shop_addr], ['phone', l.o_shop_phone], ['tagline', l.o_tagline]].map(([k, lbl]) => (
+            <div key={k} style={{ marginBottom:10 }}>
+              <label className="field-label">{lbl}{mark(k)}</label>
+              <CommitInput value={shop[k] || ''} placeholder={k === 'tagline' ? l.hero_tag : ''} maxLength={k === 'tagline' ? 140 : 100}
+                normalize={v => v.trim()} valid={v => k !== 'name' || v.length >= 2} onCommit={v => save({ shop:{ [k]:v } }, k)} />
+            </div>
+          ))}
+          <div>
+            <label className="field-label">{l.o_cashback}{mark('cashback')}</label>
+            <CommitInput className="field mono" inputMode="numeric" maxLength={2} value={S.cashbackPct ?? 5}
+              normalize={v => String(Math.min(30, parseInt(v.replace(/\D/g, ''), 10) || 0))} onCommit={v => save({ cashbackPct:Number(v) }, 'cashback')} />
+          </div>
+        </div>
+
+        <NotifyCard />
+
+        {!IS_SHOWCASE && <>
+        <p className="label" style={{ margin:'20px 0 9px' }}>{l.o_access}</p>
+        <div className="card" style={{ padding:14 }}>
+          <div style={{ marginBottom:10 }}>
+            <label className="field-label">{l.o_username}{mark('user')}</label>
+            <div className="at-field">
+              <span>@</span>
+              <CommitInput className="field mono" value={S.ownerUsername || ''} placeholder="nickname"
+                normalize={v => v.trim().replace(/^@/, '')} valid={v => !v || /^[A-Za-z0-9_]{5,32}$/.test(v)}
+                onCommit={v => save({ ownerUsername:v }, 'user')} />
+            </div>
+          </div>
+          <div style={{ marginBottom:10 }}>
+            <label className="field-label">{l.o_owner_phone}{mark('ophone')}</label>
+            <CommitInput className="field mono" type="tel" value={S.ownerPhone || ''} placeholder={l.phone_ph}
+              normalize={v => v.trim()} valid={v => v.replace(/\D/g, '').length >= 10 || (!v && !S.ownerPhone)}
+              onCommit={async v => { const r = await save({ ownerPhone:v }, 'ophone'); if (!r.error) onAuthChanged({ phone:v }); }} />
+          </div>
+          <NewPinField onSave={pin => save({ pin }, 'pin')} saved={saved === 'pin'} />
+          <p style={{ fontSize:11.5, color:'var(--gray)', marginTop:12, lineHeight:1.5 }}>{l.o_security_note}</p>
+          <p style={{ fontSize:11.5, color:'var(--gray)', marginTop:12, lineHeight:1.5 }}>{l.o_access_sub}</p>
+        </div>
+        </>}
+
+        <p className="label" style={{ margin:'20px 0 9px' }}>{l.o_client_link}</p>
+        <div className="card" style={{ padding:14, marginBottom:16 }}>
+          <CopyRow label={l.reg_client_link} value={clientLink(TENANT)} l={l} />
+          <CopyRow label={l.reg_tg_link} value={tgLink(TENANT)} l={l} />
+          <p style={{ fontSize:11.5, color:'var(--gray)', lineHeight:1.5 }}>{l.o_client_link_sub}</p>
+        </div>
+        <div style={{ marginBottom:16 }}><InstallCard /></div>
+        {IS_DEMO && <button className="btn btn-ghost btn-sm" onClick={onReset}>{l.o_reset}</button>}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════ SERVICE BOOK TAB ═══════════════════ */
+Object.assign(T.en, {
+  hist_empty_title:'No visits yet', hist_empty_sub:'Your service history appears here after the first visit: what was done, when and for how much.',
+  next_visit:'NEXT VISIT', guest:'GUEST', new_member:'NEW MEMBER',
+  member_since_fmt:d => `MEMBER SINCE ${d}`, tier_to:(n, t) => `${n} ₽ of services to ${t}`, tier_max:'Top tier reached', spent:'spent',
+  no_phone:'Shown after your first booking',
+});
+Object.assign(T.ru, {
+  hist_empty_title:'Пока пусто', hist_empty_sub:'После первого визита здесь появится история обслуживания: что сделано, когда и на какую сумму.',
+  next_visit:'СЛЕД. ВИЗИТ', guest:'ГОСТЬ', new_member:'НОВЫЙ УЧАСТНИК',
+  member_since_fmt:d => `УЧАСТНИК С ${d}`, tier_to:(n, t) => `ещё ${n} ₽ услуг до ${t}`, tier_max:'Достигнут высший уровень', spent:'потрачено',
+  no_phone:'Появится после первой записи',
+});
+
+// A visit counts once the workshop marks it done, or a confirmed booking whose day has passed.
+function useMyVisits() {
+  const { db } = useDB();
+  const today = todayKey();
+  const mine = db.bookings.filter(b => b.key && isMine(b));
+  const visits = mine.filter(b => b.status === 'done' || (b.status === 'confirmed' && b.date < today)).sort((a, b) => cmpB(b, a));
+  const upcoming = mine.filter(b => ['new', 'confirmed'].includes(b.status) && b.date >= today).sort(cmpB);
+  const spent = visits.reduce((s, b) => s + b.total, 0);
+  return { visits, upcoming, spent };
+}
+
+const TIERS = [{ name:'SILVER', from:0 }, { name:'GOLD', from:50000 }, { name:'PLATINUM', from:150000 }];
+
+function ServiceBookTab() {
+  const { l } = useLang();
+  const { db } = useDB();
+  const { visits, upcoming, spent } = useMyVisits();
+  const [open, setOpen] = useState(null);
+  const next = upcoming[0];
+  return (
+    <div className="screen">
+      <ScreenHead label={l.service_book} title={l.history_title}>
+        <div style={{ display:'flex', marginTop:14 }}>
+          {[[l.visits, visits.length], [l.total_spent, spent ? fmt(spent) : '-'], [l.next_visit, next ? `${fmtDay(next.date, l)} · ${next.start}` : '-']].map(([k, v], i) => (
+            <div key={k} style={{ flex:1, minWidth:0, borderRight:i < 2 ? '1px solid var(--border)' : 'none', paddingRight:10, paddingLeft:i ? 10 : 0 }}>
+              <p className="label" style={{ marginBottom:4 }}>{k}</p>
+              <p className="mono" style={{ fontSize:14, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v}</p>
+            </div>
+          ))}
+        </div>
+      </ScreenHead>
+      <div className="px" style={{ paddingTop:18 }}>
+        {!visits.length ? (
+          <div className="empty-state">
+            <span className="cat-ic" style={{ width:52, height:52, borderRadius:16 }}><Icon name="book" size={24} /></span>
+            <p style={{ fontSize:16, fontWeight:600, marginTop:16 }}>{l.hist_empty_title}</p>
+            <p style={{ fontSize:12.5, color:'var(--gray)', marginTop:6, lineHeight:1.55, maxWidth:280 }}>{l.hist_empty_sub}</p>
+          </div>
+        ) : (
+          <>
+            <p className="label" style={{ marginBottom:11 }}>{l.past_visits}</p>
+            {visits.map(b => (
+              <div key={b.id} className="tline-item">
+                <div className="tline-dot on" />
+                <button className="link-btn" style={{ display:'block', width:'100%', textAlign:'left', color:'inherit' }} onClick={() => setOpen(open === b.id ? null : b.id)} aria-expanded={open === b.id}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+                    <span className="mono" style={{ fontSize:11, color:'var(--gray)' }}>{fmtDay(b.date, l)} {b.date.slice(0, 4)} · {b.start}</span>
+                    <span className="mono" style={{ fontSize:13.5, fontWeight:600 }}>{fmt(b.total)}</span>
+                  </div>
+                  <p style={{ fontSize:13.5, fontWeight:600, marginBottom:4 }}>
+                    {svcById(l, db, b.svc[0])?.name}{b.svc.length > 1 && <span style={{ color:'var(--gray)', fontWeight:400 }}> +{b.svc.length - 1}</span>}
+                  </p>
+                  {b.car && <p style={{ fontSize:11.5, color:'var(--gray)' }}>{carLine(b.car)}{b.car.plate ? ` · ${b.car.plate}` : ''}</p>}
+                </button>
+                <div className={`expandable ${open === b.id ? 'open' : ''}`}>
+                  <div style={{ paddingTop:12, borderTop:'1px solid var(--border)', marginTop:10 }}>
+                    <p className="label" style={{ marginBottom:8 }}>{l.all_services}</p>
+                    {b.svc.map(id => { const s = svcById(l, db, id); return s && (
+                      <div key={id} style={{ display:'flex', justifyContent:'space-between', fontSize:12.5, marginBottom:5, paddingLeft:10, borderLeft:'2px solid var(--border2)' }}>
+                        <span>{s.name}</span><span className="mono" style={{ color:'var(--gray)' }}>{fmtDur(s.dur, l)}</span>
+                      </div>
+                    ); })}
+                    <p className="mono" style={{ fontSize:11, color:'var(--gray)', marginTop:8 }}>#{b.id} · {l.box} {b.box}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════ LOYALTY TAB ═══════════════════ */
+function ForgetCard({ onForget }) {
+  const { l } = useLang();
+  const [step, setStep] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const go = async () => { setBusy(true); setErr(''); try { await onForget(); } catch { setErr(l.net_error); setBusy(false); } };
+  return (
+    <div className="card" style={{ padding:14, marginTop:4 }}>
+      <p className="label" style={{ marginBottom:8 }}>{l.forget_title}</p>
+      <p style={{ fontSize:12, color:'var(--gray)', lineHeight:1.5, marginBottom:12 }}>{step ? l.forget_confirm : l.forget_body}</p>
+      {err && <p style={{ fontSize:12, color:'#FF6B6B', marginBottom:8 }}>{err}</p>}
+      {step === 0
+        ? <button className="btn btn-ghost btn-sm" onClick={() => setStep(1)}>{l.forget_btn}</button>
+        : <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
+            <button className="btn btn-sm danger" disabled={busy} onClick={go}>{busy ? l.reg_creating : l.forget_yes}</button>
+            <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setStep(0)}>{l.forget_no}</button>
+          </div>}
+    </div>
+  );
+}
+
+function LoyaltyTab({ tgUser, profile, canSharePhone, onRequestPhone, onForget, onProfile }) {
+  const { l } = useLang();
+  const { db } = useDB();
+  const { visits, spent } = useMyVisits();
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const pct = db.settings.cashbackPct ?? 5;
+
+  const pts = Math.round(spent * pct / 100);
+  const tierIdx = TIERS.reduce((i, t, k) => (spent >= t.from ? k : i), 0);
+  const tier = TIERS[tierIdx], nextTier = TIERS[tierIdx + 1];
+  const prog = nextTier ? Math.round(((spent - tier.from) / (nextTier.from - tier.from)) * 100) : 100;
+
+  const tgName = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : '';
+  const displayName = tgName || profile.name || l.guest;
+  const displayUsername = tgUser?.username ? `@${tgUser.username}` : null;
+  const last4 = String(tgUser?.id || profile.phone.replace(/\D/g, '') || '').slice(-4).padStart(4, '0');
+  const first = visits[visits.length - 1];
+  const sharePhone = () => { setPhoneLoading(true); onRequestPhone(() => setPhoneLoading(false)); };
+
+  return (
+    <div className="screen">
+      <ScreenHead label={l.loyalty_program} title={db.settings.shop?.name || l.loyalty_title} />
+      <div className="px" style={{ paddingTop:18 }}>
+        <div className="tg-banner" style={{ marginBottom:4 }}>
+          <div className="tg-avatar">{tgUser?.photo_url ? <img src={tgUser.photo_url} alt="" /> : <Icon name="user" size={18} />}</div>
+          <div style={{ flex:1, overflow:'hidden' }}>
+            <p style={{ fontSize:14, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{displayName}</p>
+            {displayUsername && <p style={{ fontSize:11, color:'var(--gray)', marginTop:2 }}>{displayUsername}</p>}
+          </div>
+        </div>
+        {profile.phone ? (
+          <div className={`phone-req ${profile.phoneVerified ? 'has-phone' : ''}`} style={{ marginBottom:16, cursor:'default' }}>
+            <Icon name={profile.phoneVerified ? 'check' : 'phone'} size={16} /><span className="mono" style={{ fontSize:13 }}>{profile.phone}</span>
+            {profile.phoneVerified && <span className="label" style={{ marginLeft:'auto', color:'var(--ok)' }}>{l.phone_from_tg}</span>}
+          </div>
+        ) : canSharePhone ? (
+          <button className="phone-req" onClick={sharePhone} style={{ marginBottom:16 }}>
+            {phoneLoading ? <><div className="spinner" /><span style={{ fontSize:12 }}>{l.requesting}</span></>
+              : <><Icon name="phone" size={16} /><span style={{ fontSize:12, fontWeight:500 }}>{l.share_phone}</span><span style={{ marginLeft:'auto', fontSize:10, color:'var(--gray)' }}>{l.tap}</span></>}
+          </button>
+        ) : (
+          <div className="phone-req" style={{ marginBottom:16, cursor:'default' }}>
+            <Icon name="phone" size={16} /><span style={{ fontSize:12 }}>{l.no_phone}</span>
+          </div>
+        )}
+
+        <div className="lcard" style={{ marginBottom:14 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:26 }}>
+            <div>
+              <div className="tier-badge">{tier.name}</div>
+              <p style={{ fontSize:9, color:'rgba(255,255,255,.35)', marginTop:7, letterSpacing:'.12em' }}>
+                {first ? l.member_since_fmt(first.date.slice(0, 4)) : l.new_member}
+              </p>
+            </div>
+            <span style={{ opacity:.92 }}><LogoMark size={30} /></span>
+          </div>
+          <p className="mono" style={{ fontSize:18, letterSpacing:'.08em', marginBottom:5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{displayName.toUpperCase()}</p>
+          {displayUsername && <p style={{ fontSize:10, color:'rgba(255,255,255,.5)', letterSpacing:'.1em', marginBottom:4 }}>{displayUsername}</p>}
+          <p className="mono" style={{ fontSize:11, color:'rgba(255,255,255,.28)', letterSpacing:'.22em', marginBottom:26 }}>•••• •••• •••• {last4}</p>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+            <div>
+              <p style={{ fontSize:9, color:'rgba(255,255,255,.35)', letterSpacing:'.12em', marginBottom:4 }}>{l.cashback_balance}</p>
+              <p style={{ fontSize:34, fontWeight:700, letterSpacing:'-.02em', lineHeight:1 }}>
+                {pts.toLocaleString('ru-RU')}<span style={{ fontSize:15, fontWeight:500, color:'rgba(255,255,255,.55)', marginLeft:5 }}>{l.pts}</span>
+              </p>
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <p style={{ fontSize:9, color:'rgba(255,255,255,.35)', letterSpacing:'.1em', marginBottom:4 }}>{l.approx_value}</p>
+              <p className="mono" style={{ fontSize:16, fontWeight:600 }}>{fmt(pts)}</p>
+            </div>
+          </div>
+        </div>
+        <p style={{ fontSize:11.5, color:'var(--gray)', margin:'-4px 4px 14px', lineHeight:1.5 }}>{l.cashback_rule(pct)}</p>
+
+        <div className="card" style={{ padding:'16px 14px', marginBottom:12 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+            <div>
+              <p style={{ fontSize:13, fontWeight:600 }}>{nextTier ? <>{l.next_tier} {nextTier.name}</> : tier.name}</p>
+              <p style={{ fontSize:11, color:'var(--gray)', marginTop:2 }}>
+                {nextTier ? l.tier_to((nextTier.from - spent).toLocaleString('ru-RU'), nextTier.name) : l.tier_max}
+              </p>
+            </div>
+            <span style={{ fontSize:14, fontWeight:700 }}>{prog}%</span>
+          </div>
+          <div className="pbar"><div className="pfill" style={{ width:`${prog}%` }} /></div>
+          <div style={{ display:'flex', justifyContent:'space-between', marginTop:7, gap:8 }}>
+            <span className="label">{tier.name} · {fmt(spent)} {l.spent}</span>
+            {nextTier && <span className="label">{nextTier.name} · {fmt(nextTier.from)}</span>}
+          </div>
+        </div>
+        <div className="card" style={{ padding:14, marginBottom:4 }}>
+          <p className="label" style={{ marginBottom:10 }}>{l.my_data}</p>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <div>
+              <label className="field-label">{l.my_name}</label>
+              <CommitInput value={profile.name} maxLength={60} normalize={v => v.trim()} onCommit={v => onProfile({ name:v })} />
+            </div>
+            <div>
+              <label className="field-label">{l.my_phone}</label>
+              <CommitInput className="field mono" type="tel" value={profile.phone} maxLength={30} placeholder={l.phone_ph}
+                normalize={v => v.trim()} valid={v => !v || v.replace(/\D/g, '').length >= 10}
+                onCommit={v => onProfile({ phone:v, phoneVerified:profile.phoneVerified && v === profile.phone })} />
+            </div>
+          </div>
+          <p style={{ fontSize:11, color:'var(--gray)', marginTop:10, lineHeight:1.5 }}>{l.my_data_sub}</p>
+        </div>
+        <ForgetCard onForget={onForget} />
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════ PERSONAL DATA NOTICE ═══════════════════ */
+function PrivacySheet({ onClose }) {
+  const { l } = useLang();
+  const { db } = useDB();
+  return (
+    <div className="modal-backdrop" style={{ zIndex:60 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="px" style={{ paddingTop:8, paddingBottom:22 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'8px 0 14px' }}>
+            <h2 style={{ fontSize:19 }}>{l.privacy_title}</h2>
+            <button className="icon-btn" onClick={onClose} aria-label="close"><Icon name="close" size={16} /></button>
+          </div>
+          <p style={{ fontSize:13.5, lineHeight:1.6, color:'#C9C9CE' }}>{l.privacy_body(db.settings.shop?.name || 'GARAGE')}</p>
+          {db.settings.shop?.phone && <p className="mono" style={{ fontSize:12.5, marginTop:12, color:'var(--gray)' }}>{db.settings.shop.phone}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConsentRow({ checked, onChange }) {
+  const { l } = useLang();
+  const [show, setShow] = useState(false);
+  return (
+    <>
+      <label className="consent">
+        <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
+        <span className={`checkbox ${checked ? 'on' : ''}`} aria-hidden="true">{checked && <Icon name="check" size={12} stroke={2.6} />}</span>
+        <span>{l.consent_pre}<button type="button" className="inline-link" onClick={e => { e.preventDefault(); setShow(true); }}>{l.consent_link}</button>{l.consent_post}</span>
+      </label>
+      {show && <PrivacySheet onClose={() => setShow(false)} />}
+    </>
+  );
+}
+
+/* ═══════════════════ OWNER LOGIN ═══════════════════ */
+function PinScreen({ onOk, byTelegram }) {
+  const { l } = useLang();
+  const { db } = useDB();
+  const [pin, setPin] = useState('');
+  const [phone, setPhone] = useState(() => ls_get(PHONE_KEY, ''));
+  const [err, setErr] = useState('');
+  const pinRef = useRef(''), phoneRef = useRef(phone), checking = useRef(false);
+  phoneRef.current = phone;
+  const tgName = tgUser0()?.username;
+  const needPhone = !byTelegram && (db.settings.ownerPhoneRequired ?? !!db.settings.ownerPhone);
+
+  // Returns the session token (or 'local' in the in-browser demo), or an error text.
+  const check = async auth => {
+    if (!REMOTE) return ownerAuthOk(loadDB(), auth, tgUser0()) ? { session:'local' } : { error:l.login_wrong };
+    try { const r = await apiCall({ action:'login', auth }); return { session:r.session }; }
+    catch (e) {
+      if (e.code === 'locked') return { error:l.err_locked };
+      if (e.code === 'auth') return { error:l.login_wrong };
+      return { error:l.net_error };
+    }
+  };
+  const press = d => {
+    if (checking.current || pinRef.current.length >= 4) return;
+    if (needPhone && phoneRef.current.replace(/\D/g, '').length < 10) { setErr(l.login_need_phone); return; }
+    const p = pinRef.current + d;
+    pinRef.current = p; setPin(p); setErr('');
+    if (p.length < 4) return;
+    checking.current = true;
+    setTimeout(async () => {
+      const auth = { pin:p, phone:byTelegram ? '' : phoneRef.current.trim() };
+      const r = await check(auth);
+      checking.current = false;
+      if (r.session) {
+        if (auth.phone) ls_set(PHONE_KEY, auth.phone);
+        TG?.HapticFeedback?.notificationOccurred?.('success'); onOk(r.session); return;
+      }
+      TG?.HapticFeedback?.notificationOccurred?.('error');
+      setErr(r.error);
+      setTimeout(() => { pinRef.current = ''; setPin(''); }, 450);
+    }, 120);
+  };
+  const del = () => { if (checking.current) return; pinRef.current = pinRef.current.slice(0, -1); setPin(pinRef.current); };
+  useEffect(() => {
+    const on = e => { if (e.target.tagName === 'INPUT') return; if (/^\d$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') del(); };
+    window.addEventListener('keydown', on);
+    return () => window.removeEventListener('keydown', on);
+  }, []);
+
+  return (
+    <div className="pin-screen">
+      <div className="hero-mark" style={{ width:68, height:68, borderRadius:20, marginBottom:18 }}><LogoMark size={36} /></div>
+      <h2 style={{ fontSize:21 }}>{l.pin_title}</h2>
+      <p style={{ fontSize:12.5, color:'var(--gray)', marginTop:4 }}>{db.settings.shop?.name}</p>
+      {byTelegram && <p className="pin-sub">{l.login_by_tg(tgName)}</p>}
+      {needPhone && <input className="field mono pin-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder={l.login_phone}
+            value={phone} onChange={e => { setPhone(e.target.value); setErr(''); }} aria-label={l.login_phone} />}
+      {(err || !byTelegram) && <p className="pin-sub" style={{ color:err ? '#FF6B6B' : undefined }}>{err || l.pin_sub}</p>}
+      <div className={`pin-dots ${err === l.login_wrong || err === l.err_locked ? 'shake' : ''}`}>{[0,1,2,3].map(i => <span key={i} className={i < pin.length ? 'on' : ''} />)}</div>
+      {IS_SHOWCASE && <div className="pin-showcase">
+        <span>{l.pin_showcase}</span>
+        <button className="btn btn-primary btn-sm" style={{ width:'auto', padding:'10px 16px', whiteSpace:'nowrap' }}
+          onClick={() => { pinRef.current = ''; setPin(''); window.GarageCore.SHOWCASE_PIN.split('').forEach(press); }}>{l.pin_showcase_btn}</button>
+      </div>}
+      <div className="keypad">
+        {['1','2','3','4','5','6','7','8','9','','0','del'].map((k, i) =>
+          k === '' ? <span key={i} /> :
+          <button key={i} className={k === 'del' ? 'ghost' : ''} onClick={() => k === 'del' ? del() : press(k)} aria-label={k === 'del' ? 'delete' : k}>
+            {k === 'del' ? <Icon name="backspace" size={24} /> : k}
+          </button>
+        )}
+      </div>
+      {!REMOTE && !IS_SHOWCASE && <p className="pin-demo">{l.pin_demo}</p>}
+      <a className="pin-demo" style={{ color:'var(--gray)' }} href={`${appBase()}?app=register`}>{l.login_new}</a>
+    </div>
+  );
+}
+
+/* ═══════════════════ WORKSHOP REGISTRATION ═══════════════════ */
+function RegisterApp() {
+  const { l } = useLang();
+  const tg = tgUser0();
+  const [f, setF] = useState({ name:'', address:'', shopPhone:'', tagline:'', username:tg?.username || '', phone:'', pin:'', pin2:'', boxes:2, open:'09:00', close:'19:00' });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [slug, setSlug] = useState(null);
+  const set = (k, v) => { setF(p => ({ ...p, [k]:v })); setErr(''); };
+  const hours = Array.from({ length:17 }, (_, i) => toHM((6 + i) * 60));
+  const user = f.username.trim().replace(/^@/, '');
+  const problems = [
+    f.name.trim().length < 2 && l.err_name,
+    !/^[A-Za-z0-9_]{5,32}$/.test(user) && l.err_username,
+    f.phone.replace(/\D/g, '').length < 10 && l.err_phone,
+    !/^\d{4}$/.test(f.pin) && l.err_pin,
+    f.pin !== f.pin2 && l.reg_pin_mismatch,
+    f.open >= f.close && l.err_hours,
+  ].filter(Boolean);
+
+  const submit = async () => {
+    if (problems.length) { setErr(problems[0]); return; }
+    setBusy(true);
+    try {
+      const r = await apiCall({ action:'register', data:{
+        service:{ name:f.name, address:f.address, phone:f.shopPhone, tagline:f.tagline },
+        owner:{ username:user, phone:f.phone, pin:f.pin },
+        schedule:{ boxes:f.boxes, open:f.open, close:f.close },
+      } });
+      ls_set(`garage_owner_phone:${r.slug}`, f.phone);
+      setSlug(r.slug);
+    } catch (e) { setErr(errText(l, e.code)); }
+    setBusy(false);
+  };
+
+  const field = (k, label, ph, extra = {}) => (
+    <div style={{ marginBottom:10 }}>
+      <label className="field-label" htmlFor={`reg-${k}`}>{label}</label>
+      <input id={`reg-${k}`} className={`field ${extra.mono ? 'mono' : ''}`} placeholder={ph} value={f[k]} type={extra.type || 'text'}
+        inputMode={extra.inputMode} maxLength={extra.max || 100} onChange={e => set(k, extra.digits ? e.target.value.replace(/\D/g, '') : e.target.value)} />
+      {extra.hint && <p style={{ fontSize:11, color:'var(--gray)', marginTop:5 }}>{extra.hint}</p>}
+    </div>
+  );
+
+  if (slug) return (
+    <div className="tab-content"><div className="screen"><div className="px" style={{ paddingTop:24 }}>
+      <div className="done-badge">✓</div>
+      <h2 style={{ fontSize:24, marginBottom:6 }}>{l.reg_done}</h2>
+      <p style={{ fontSize:13, color:'var(--gray)', lineHeight:1.55, marginBottom:18 }}>{l.reg_done_sub}</p>
+      <div className="card" style={{ padding:14, marginBottom:14 }}>
+        <CopyRow label={l.reg_client_link} value={clientLink(slug)} l={l} />
+        <CopyRow label={l.reg_tg_link} value={tgLink(slug)} l={l} />
+        <CopyRow label={l.reg_owner_link} value={ownerLink(slug)} l={l} />
+      </div>
+      <a className="btn btn-primary" style={{ textDecoration:'none' }} href={ownerLink(slug)}>{l.reg_open_owner}</a>
+    </div></div></div>
+  );
+
+  return (
+    <div className="tab-content"><div className="screen">
+      <ScreenHead label="GARAGE" title={l.reg_title}><p style={{ fontSize:12.5, color:'var(--gray)', marginTop:6, lineHeight:1.5 }}>{l.reg_sub}</p></ScreenHead>
+      <div className="px" style={{ paddingTop:18 }}>
+        {!REMOTE && <div className="offline-bar" style={{ margin:'0 0 14px' }}>{l.reg_offline}</div>}
+        <p className="label sec">{l.reg_step_shop}</p>
+        <div className="card" style={{ padding:14, marginBottom:18 }}>
+          {field('name', l.reg_name, l.reg_name_ph, { max:60 })}
+          {field('address', l.reg_addr, l.reg_addr_ph)}
+          {field('shopPhone', l.reg_shop_phone, l.phone_ph, { type:'tel', mono:true, max:30 })}
+          {field('tagline', l.o_tagline, l.reg_tagline_ph, { max:140 })}
+        </div>
+        <p className="label sec">{l.reg_step_owner}</p>
+        <div className="card" style={{ padding:14, marginBottom:18 }}>
+          {field('username', l.reg_username, '@nickname', { mono:true, max:33, hint:l.reg_username_hint })}
+          {field('phone', l.reg_owner_phone, l.phone_ph, { type:'tel', mono:true, max:30, hint:l.reg_owner_phone_hint })}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            {field('pin', l.reg_pin, '••••', { inputMode:'numeric', mono:true, max:4, digits:true })}
+            {field('pin2', l.reg_pin2, '••••', { inputMode:'numeric', mono:true, max:4, digits:true })}
+          </div>
+        </div>
+        <p className="label sec">{l.reg_step_hours}</p>
+        <div className="card" style={{ marginBottom:18 }}>
+          <div className="spec-row">
+            <span style={{ fontSize:13 }}>{l.o_boxes}</span>
+            <div className="stepper">
+              <button onClick={() => set('boxes', Math.max(1, f.boxes - 1))} aria-label="−">−</button>
+              <span>{f.boxes}</span>
+              <button onClick={() => set('boxes', Math.min(4, f.boxes + 1))} aria-label="+">+</button>
+            </div>
+          </div>
+          <div className="spec-row">
+            <span style={{ fontSize:13 }}>{l.o_hours}</span>
+            <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+              <select className="mini-field" style={{ width:72 }} value={f.open} onChange={e => set('open', e.target.value)}>{hours.map(h => <option key={h}>{h}</option>)}</select>
+              <span style={{ color:'var(--gray)' }}>-</span>
+              <select className="mini-field" style={{ width:72 }} value={f.close} onChange={e => set('close', e.target.value)}>{hours.map(h => <option key={h}>{h}</option>)}</select>
+            </div>
+          </div>
+        </div>
+        {err && <p style={{ fontSize:12.5, color:'#FF6B6B', marginBottom:10 }}>{err}</p>}
+        <button className="btn btn-primary" disabled={busy || !REMOTE} style={{ opacity:busy || !REMOTE ? .4 : 1, gap:10 }} onClick={submit}>
+          {busy && <div className="spinner" style={{ borderTopColor:'#0A0A0B' }} />}{busy ? l.reg_creating : l.reg_create}
+        </button>
+      </div>
+    </div></div>
+  );
+}
+
+function NotFound() {
+  const { l } = useLang();
+  return (
+    <div className="pin-screen">
+      <div className="hero-mark" style={{ width:68, height:68, borderRadius:20, marginBottom:18 }}><LogoMark size={36} /></div>
+      <h2 style={{ fontSize:21 }}>{l.nf_title}</h2>
+      <p className="pin-sub" style={{ maxWidth:280, textAlign:'center', lineHeight:1.5 }}>{l.nf_sub}</p>
+      <a className="btn btn-ghost btn-sm" style={{ width:'auto', marginTop:18, textDecoration:'none' }} href={appBase()}>{l.nf_demo}</a>
+    </div>
+  );
+}
+
+/* ═══════════════════ BOTTOM NAV ═══════════════════ */
+function BottomNav({ items, active, set }) {
+  return (
+    <nav className="nav">
+      {items.map(t => (
+        <button key={t.id} className={`nav-btn ${active===t.id?'on':''}`} onClick={() => set(t.id)}>
+          <Icon name={t.icon} size={22} stroke={active===t.id ? 1.9 : 1.6} />
+          <span className="nav-label">{t.label}</span>
+          {t.badge > 0 && <span className="nav-badge">{t.badge}</span>}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+/* ═══════════════════ APP ROOT ═══════════════════ */
+function App() {
+  const isOwner = ROLE === 'owner';
+  const tgUser = tgUser0();
+  const [db, setDb] = useState(loadDB);
+  const byTelegram = isOwner && (OWNER_BY_TG || isOwnerUser(db, tgUser));
+  const [authed, setAuthed] = useState(() => !isOwner);
+  const [tab,  setTab]  = useState(isOwner ? 'o_bookings' : 'garage');
+  const [key,  setKey]  = useState(0);
+  const [lang, setLang] = useState(() => ls_get('garage_lang', 'ru'));
+
+  const [car,  setCar]  = useState(() => ls_get(CAR_KEY, null));
+  const [showCarSetup, setShowCarSetup] = useState(false);
+  const [showAI, setShowAI] = useState(false);
+
+  const [profile, setProfile] = useState(() => ({ name:'', phone:'', phoneVerified:false, ...ls_get(PROFILE_KEY, {}) }));
+  const saveProfile = patch => setProfile(p => { const next = { ...p, ...patch }; ls_set(PROFILE_KEY, next); return next; });
+
+  const [offline, setOffline] = useState(false);
+  const [synced, setSynced] = useState(!REMOTE);
+  const [toast, fireToast] = useToast();
+
+  const l = T[lang];
+  const lRef = useRef(l); lRef.current = l;
+  const switchLang = newLang => { setLang(newLang); ls_set('garage_lang', newLang); setKey(k => k+1); };
+
+  // Locks the dashboard: the session token is dropped on this device and ended on the server.
+  const logout = useCallback(() => {
+    const s = OWNER_SESSION;
+    OWNER_SESSION = null;
+    if (REMOTE && s) apiCall({ action:'logout', session:s }).catch(() => {});
+    setAuthed(false); setTab('o_bookings'); setSynced(!REMOTE);
+    if (REMOTE) setDb(loadDB());
+  }, []);
+
+  const refresh = useCallback(async () => {
+    if (!REMOTE) { setDb(loadDB()); return; }
+    const session = OWNER_SESSION;
+    if (isOwner && !session) return;
+    try {
+      if (isOwner) {
+        // Owner data (client names and phones) stays in memory only, never in the device's storage.
+        const res = await apiCall({ action:'owner', session });
+        setDb(res.db);
+      } else {
+        const res = await apiCall({ action:'public', mine:myBookings() });
+        ls_set(CACHE_KEY, res.db); setDb(res.db);
+      }
+      setOffline(false); setSynced(true);
+    } catch (e) {
+      // A 401 for a token that was already replaced (PIN changed meanwhile) is stale: ignore it.
+      if (e.status === 401 && isOwner) { if (session === OWNER_SESSION) logout(); }
+      else setOffline(true);
+    }
+  }, [isOwner, logout]);
+
+  // Auto-lock: 5 minutes in the background or 30 minutes without touching the dashboard.
+  useEffect(() => {
+    if (!isOwner || !authed) return;
+    let last = Date.now(), hiddenAt = null;
+    const touch = () => { last = Date.now(); };
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 5 * 60000) logout();
+      hiddenAt = null; touch();
+    };
+    const id = setInterval(() => { if (Date.now() - last > 30 * 60000) logout(); }, 30000);
+    ['pointerdown', 'keydown', 'scroll'].forEach(ev => window.addEventListener(ev, touch, { passive:true, capture:true }));
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(id); document.removeEventListener('visibilitychange', onVis);
+      ['pointerdown', 'keydown', 'scroll'].forEach(ev => window.removeEventListener(ev, touch, { capture:true }));
+    };
+  }, [isOwner, authed, logout]);
+
+  // Every write goes through here: applied locally in the demo, sent to /api/db with the server.
+  const dispatch = useCallback(async op => {
+    const fail = r => { if (op.type !== 'book') fireToast(errText(lRef.current, r.error)); return r; };
+    const done = r => { if (op.type === 'clientCancel') fireToast(lRef.current.booking_cancelled); else if (op.type === 'edit') fireToast(lRef.current.saved_ok); return r; };
+    if (!REMOTE) {
+      const next = loadDB();
+      const r = applyOp(next, { ...op, today:todayKey() });
+      if (r.error) return fail(r);
+      ls_set(DB_KEY, next); setDb(next);
+      if (r.booking && op.type === 'book') addMine(r.booking);
+      return done(r);
+    }
+    try {
+      if (op.type === 'book') {
+        const r = await apiCall({ action:'book', data:op.data });
+        addMine(r.booking); refresh();
+        return r;
+      }
+      if (op.type === 'clientCancel') {
+        const r = await apiCall({ action:'cancel', id:op.id, mine:myBookings() });
+        await refresh();
+        return done(r);
+      }
+      setDb(d => { const c = JSON.parse(JSON.stringify(d)); applyOp(c, { ...op, today:todayKey() }); return c; });
+      const r = await apiCall({ action:'op', op, session:OWNER_SESSION });
+      if (r.session) OWNER_SESSION = r.session;
+      setDb(r.db);
+      return done(r);
+    } catch (e) {
+      if (e.status === 401) { logout(); return fail({ error:'auth' }); }
+      refresh();
+      return fail({ error:e.code || 'network' });
+    }
+  }, [refresh, logout]);
+
+  useEffect(() => { if (authed) refresh(); }, [authed]);
+  useEffect(() => {
+    const tick = () => { if (document.visibilityState === 'visible' && authed) refresh(); };
+    const id = setInterval(tick, REMOTE ? 5000 : 1500);
+    document.addEventListener('visibilitychange', tick);
+    const onStorage = e => { if (!REMOTE && e.key === DB_KEY) setDb(loadDB()); };
+    window.addEventListener('storage', onStorage);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', tick); window.removeEventListener('storage', onStorage); };
+  }, [authed, refresh]);
+
+  // Owner signed in from Telegram: remember that chat so the server knows where to send new-booking alerts.
+  const ownerSynced = useRef(false);
+  useEffect(() => {
+    if (!isOwner || !authed || !synced || !tgUser?.id || ownerSynced.current || IS_SHOWCASE) return;
+    ownerSynced.current = true;
+    if (db.settings.ownerTg?.id !== tgUser.id)
+      dispatch({ type:'settings', patch:{ ownerTg:{ id:tgUser.id, name:[tgUser.first_name, tgUser.last_name].filter(Boolean).join(' '), username:tgUser.username || '' } } });
+  }, [isOwner, authed, synced]);
+
+  const newCount = isOwner ? db.bookings.filter(b => b.status === 'new').length : 0;
+  const prevNew = useRef(null);
+  useEffect(() => {
+    // The first load after sign-in only sets the baseline; alert only on requests that arrive while the dashboard is open.
+    if (!authed || !synced) { prevNew.current = null; return; }
+    if (prevNew.current !== null && newCount > prevNew.current) { fireToast(l.o_new_toast); TG?.HapticFeedback?.notificationOccurred?.('warning'); }
+    prevNew.current = newCount;
+  }, [newCount, authed, synced]);
+
+  // First visit to the client app: ask for the car right away.
+  useEffect(() => {
+    if (!isOwner && !TENANT_MISSING && APP_MODE !== 'register' && !car && !ls_get(CAR_PROMPTED_KEY, false)) { ls_set(CAR_PROMPTED_KEY, true); setShowCarSetup(true); }
+  }, []);
+
+  useEffect(() => { initTelegram(); }, []);
+  useEffect(() => { if (APP_MODE !== 'register') setManifest(db.settings.shop?.name || ''); }, [db.settings.shop?.name]);
+
+  const canSharePhone = !!TG?.initData && typeof TG.requestContact === 'function' && !!TG.isVersionAtLeast?.('6.9');
+  const requestPhone = onDone => {
+    if (!canSharePhone) { onDone?.(); return; }
+    try {
+      TG.requestContact((isShared, res) => {
+        const p = res?.responseUnsafe?.contact?.phone_number;
+        if (isShared && p) saveProfile({ phone:p.startsWith('+') ? p : '+' + p, phoneVerified:true });
+        onDone?.();
+      });
+    } catch { onDone?.(); }
+  };
+
+  const go = useCallback(id => {
+    if (id !== tab) { setTab(id); setKey(k => k+1); TG?.HapticFeedback?.selectionChanged?.(); }
+  }, [tab]);
+
+  const login = session => { OWNER_SESSION = session; setAuthed(true); };
+  const onAuthChanged = patch => { if (patch.phone) ls_set(PHONE_KEY, patch.phone); };
+  const forgetMe = async () => {
+    if (REMOTE) await apiCall({ action:'forget', mine:myBookings() });
+    else { const next = loadDB(); window.GarageCore.forgetClient(next, myBookings(), todayKey()); ls_set(DB_KEY, next); }
+    wipeClientData();
+    location.reload();
+  };
+  const resetDemo = async () => { await dispatch({ type:'reset' }); };
+  const saveCar = newCar => { setCar(newCar); setShowCarSetup(false); };
+  const onBooked = b => saveProfile({ name:b.name, phone:b.phone, phoneVerified:profile.phoneVerified && b.phone === profile.phone });
+
+  const clientNav = [
+    { id:'garage',  icon:'garage',   label:l.nav_garage  },
+    { id:'booking', icon:'calendar', label:l.nav_book    },
+    { id:'history', icon:'book',     label:l.nav_history },
+    { id:'loyalty', icon:'star',     label:l.nav_loyalty },
+  ];
+  const ownerNav = [
+    { id:'o_bookings', icon:'inbox',   label:l.o_bookings, badge:newCount },
+    { id:'o_schedule', icon:'grid',    label:l.o_schedule },
+    { id:'o_services', icon:'sliders', label:l.o_services },
+  ];
+  const bookingProps = { tgUser, profile, car, canSharePhone, onRequestPhone:requestPhone, onBooked, onAddCar:() => setShowCarSetup(true) };
+
+  let body;
+  if (APP_MODE === 'register') body = <RegisterApp />;
+  else if (TENANT_MISSING) body = <NotFound />;
+  else if (!authed) body = <PinScreen onOk={login} byTelegram={byTelegram} />;
+  else body = <>
+    <div className="tab-content" key={key}>
+      {!isOwner && tab==='garage'  && <GarageTab car={car} onEditCar={() => setShowCarSetup(true)} onBook={() => go('booking')} />}
+      {!isOwner && tab==='booking' && <BookingTab onMine={() => go('garage')} onOpenAI={() => setShowAI(true)} {...bookingProps} />}
+      {!isOwner && tab==='history' && <ServiceBookTab />}
+      {!isOwner && tab==='loyalty' && <LoyaltyTab tgUser={tgUser} profile={profile} canSharePhone={canSharePhone} onRequestPhone={requestPhone} onForget={forgetMe} onProfile={saveProfile} />}
+      {isOwner && tab==='o_bookings' && <OwnerBookings />}
+      {isOwner && tab==='o_schedule' && <OwnerSchedule />}
+      {isOwner && tab==='o_services' && <OwnerServices onReset={resetDemo} onAuthChanged={onAuthChanged} />}
+    </div>
+    <BottomNav items={isOwner ? ownerNav : clientNav} active={tab} set={go} />
+  </>;
+
+  return (
+    <DBCtx.Provider value={{ db, dispatch, refresh }}>
+    <LangCtx.Provider value={{ l, lang, setLang: switchLang }}>
+      <div className="topbar">
+        <span className="brand"><LogoMark size={22} />GARAGE</span>
+        <span style={{ marginLeft:'auto' }} />
+        <div className="seg">
+          <button className={lang==='ru'?'on':''} onClick={() => switchLang('ru')}>RU</button>
+          <button className={lang==='en'?'on':''} onClick={() => switchLang('en')}>EN</button>
+        </div>
+        {isOwner && authed && APP_MODE !== 'register' && <button className="icon-btn" onClick={logout} aria-label={l.logout} title={l.logout}><Icon name="logout" size={16} /></button>}
+      </div>
+      {offline && <div className="offline-bar">{l.net_error}</div>}
+      {body}
+      {showCarSetup && <CarSetupModal car={car} onSave={saveCar} onClose={() => setShowCarSetup(false)} />}
+      {showAI && <AssistantSheet onClose={() => setShowAI(false)} {...bookingProps} onBooked={b => { onBooked(b); fireToast(l.booking_confirmed); }} />}
+      <div className={`toast ${toast.show?'show':''}`}>{toast.msg}</div>
+    </LangCtx.Provider>
+    </DBCtx.Provider>
+  );
+}
+
+boot().then(() => ReactDOM.createRoot(document.getElementById('root')).render(<App />));
+</script>
+</body>
+</html>
